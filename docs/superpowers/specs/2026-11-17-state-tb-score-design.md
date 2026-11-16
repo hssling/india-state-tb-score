@@ -1,7 +1,7 @@
 # Design: does India's State TB Score measure what it is used to reward?
 
 Date: 17 November 2026. Author of the study: Siddalingaiah H S (single author).
-Status: design, awaiting the author's approval. Nothing has been computed.
+Status: approved by the author, 17 November 2026. Nothing has been computed.
 
 ## 1. Intent
 
@@ -139,7 +139,7 @@ Money now follows the score. Nobody has published a test of whether it can be re
 - `docs/` holds the design and the dated analysis plan;
 - `src/` holds the extraction and analysis code;
 - `verification/` holds the checks;
-- `manuscript/` is kept out of any public repository until a decision, like Papers C and D;
+- `manuscript/` is kept out of any public repository until a journal decision;
 - `data_raw/` is git-ignored.
 
 **Order of work:** the plan is committed before the first computation.
@@ -153,7 +153,7 @@ Money now follows the score. Nobody has published a test of whether it can be re
 - **No meta language:** no drafting-history language in any manuscript text; corrections are stated as findings.
 - **Pre-registration:** the analysis plan is dated and committed before computing. Deviations are logged with dates.
 - **Tools:** Python. pdfplumber (installed) for extraction only; the analysis uses the standard library, like the author's other projects.
-- **Read-only material:** the author's other projects stay read-only (`tb_bopas_repo`, `manuscript_3_TB_BOPAS`, the OHB assets).
+- **Read-only material:** the author's other projects are not modified.
 
 ## 8. Decisions after the builder check (17 Nov 2026)
 

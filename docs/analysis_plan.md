@@ -35,7 +35,7 @@ The following files were downloaded on 16–17 November 2026 to `data_raw/`, whi
 
 The 2019, 2022 and 2025 editions of the India TB Report are not listed on CTD's site. The analysis is not held for them; if any is obtained from an official source, its use is logged in §13.
 
-**Population.** Wherever a population weight is needed, state populations are taken from the population underlying each edition's state-wise notification-rate table, so that the score and its alternatives share one population.
+**Population.** Wherever a population weight is needed, a state's population is derived from annexure 1.2 of the 2024 edition as notified patients ÷ notification rate per 100,000 × 10⁵, so that the score and its alternatives share one population.
 
 ## 4. Data seen before this plan
 
@@ -62,7 +62,7 @@ The definitions are those published by CTD at ntep.in/node/1662 (read on 16 Nove
 
 | # | Points | Indicator | Numerator | Denominator | Source, 2024 edition (score year 2023): annexure, printed page (PDF page) |
 |---|---|---|---|---|---|
-| 1 | 20 | % of target TB notification achieved | Total TB patients notified during the defined period | Target TB patients estimated for the year | Annexure 1.2, p. 157 (PDF 187); denominator checked against Table 11.1 (§5.3) |
+| 1 | 20 | % of target TB notification achieved | Total TB patients notified during the defined period | Target TB patients estimated for the year | Annexure 1.2, p. 157 (PDF 187); denominator as decided by §5.3 |
 | 2 | 10 | % of TB notified patients with known HIV status | Number of patients with HIV status known (HIV result positive or negative / reactive or non-reactive) | Net TB patients notified during the defined period | Annexure 2.1, p. 169 (PDF 199) |
 | 3 | 10 | % of TB notified patients with UDST done | Number of patients with UDST done and rifampicin status known (sensitive or resistant) | State benchmark of net TB patients notified during the defined period (set by CTD's UDST page at 70% of notified: §5.2) | To be located (§5.4) |
 | 4 | 15 | Treatment success rate | Number of TB patients with outcome successful (cured or treatment completed) | Net TB patients notified during the same period | Annexure 3.3 (2022 cohort, total), p. 192 (PDF 222), for the numerator and the matched-cohort denominator of §8.1 item 4; the same-period denominator from the edition's notification annexure (§5.4) |
@@ -82,11 +82,17 @@ For each state s and indicator i, achievement is the proportion a_si = numerator
 
 - a is a proportion, not a percentage, and is **not capped** before a scoring rule is applied: a > 1 is allowed (for example, notification above target, or UDST above the 70% benchmark).
 - If the denominator is zero or not published for a state, a_si is **not computable**. It is never set to 0 or 1, and no value is imputed. The state's score under any rule that needs that indicator is reported as not computable, and the state is listed.
+- A state row that is printed with a blank or zero denominator, or a blank numerator, falls under the previous item. A zero numerator over a positive denominator is an achievement of 0.
 - The UDST denominator (indicator 3) is 0.7 × the state's net notified patients, the state benchmark set on CTD's UDST page.
 
 ### 5.3 Notification target
 
-Before any reconstruction, the national total of "expected" patients in annexure 1.2 is compared with the annual notification target in Table 11.1 (2,761,682). The result is written to `outputs/q1_target_check.txt` and decides how the burden variant of Q2 is run (§8.1, item 3).
+Before any reconstruction, the national total of "expected" patients in annexure 1.2 is compared with the annual notification target in Table 11.1 (2,761,682). The result is written to `outputs/q1_target_check.txt`.
+
+- **Agreement:** "expected" is taken to be CTD's target if the two national totals agree within 0.1%, that is, if |national "expected" − 2,761,682| ≤ 0.001 × 2,761,682.
+- **If they agree:** indicator 1 uses each state's annexure 1.2 "expected" as its denominator. The burden-denominator variant of Q2 (§8.1, item 3) is dropped, because no independent state-wise burden estimate is pre-specified, and the paper says so.
+- **If they disagree:** indicator 1 is not computable, because the state targets are not published, and it is treated as missing under §5.4, item 4; the reconstruction is then partial (§7.2). The burden-denominator variant uses annexure 1.2 "expected" as the burden denominator.
+- No other burden source is introduced, except as an exploratory analysis logged as a dated deviation (§13).
 
 ### 5.4 Rules for locating a source
 
@@ -98,11 +104,12 @@ For each indicator and each edition:
 4. If no state-wise table covering every unit exists in the edition, the indicator is **missing** for that score year and the analysis proceeds under §7.2. No value is imputed and no other edition's value is substituted.
 5. **Indicator 7.** The search outside the India TB Report is limited to official, public National Health Mission and programme implementation plan documents (state PIP Records of Proceedings and NHM financial management reports). Each download needs the author's prior permission. The search closes when extraction for score year 2023 is complete; if no source covering every unit has been found by then, indicator 7 is missing. A source found later is used only as a dated deviation (§13).
 6. The 2023 and 2021 editions (score years 2022 and 2020) are mapped by the same rules; their annexure numbers are to be located. The definition each edition states for its score year (indicators, points, denominators) is recorded in `data/extracted/definitions.csv`, together with whether the edition prints state scores.
+7. **Freeze point.** Before any score is computed, every source choice is recorded in a committed file, `data/source_choices.csv`, with one row per choice for each score year. It records: the table and column used for each numerator and denominator, including which "net notified" column feeds indicators 2, 3 and 4; the sources of indicators 3 and 9; the quantity used for indicator 5 (§5.5); the outcome of §5.3; and the outcome of the search for a CTD statement of R4 bands. Any change to a recorded choice after that commit is a dated deviation (§13).
 
 ### 5.5 Pre-specified definitional mismatches
 
 - **Indicator 8.** The definition counts children under 6 years given isoniazid chemoprophylaxis. The 2024 edition's annexure 7.2 reports TB preventive treatment among household contacts under 5 years. Indicator 8 is computed from the published under-5 table and flagged as a definitional mismatch in every output that uses it.
-- **Indicator 5.** The definition counts patients paid at least once; the 2024 edition's key performance indicator table uses "all benefits paid". Indicator 5 is computed from whichever quantity the state-wise table reports, and which one that is is recorded with the extracted values.
+- **Indicator 5.** The definition counts patients paid at least once; the 2024 edition's key performance indicator table uses "all benefits paid". Indicator 5 is computed from whichever quantity the state-wise table reports. If the table prints both, "paid at least once" is used, following the definition. The quantity used is recorded in `data/source_choices.csv` (§5.4, item 7).
 
 ## 6. Scoring rules
 
@@ -125,34 +132,48 @@ R1–R4 are the confirmatory set. Any rule added after the data have been seen i
 
 - **Partial score:** the sum of points over the indicators available for that score year.
 - **Rescaled partial score:** 100 × partial score ÷ (sum of pts_i over the available indicators).
+- When all nine indicators are available, the partial score and the rescaled partial score are both the full score.
 
 ## 7. Q1: reconstruction and rule selection
+
+**Exclusions.** A state whose score is not computable under a rule (§5.2) is excluded from the comparison of rules in both §7.1 and §7.2 and is listed. "Every computable state" below means every state not so excluded.
 
 ### 7.1 Full reconstruction (all nine indicators available)
 
 - **Match:** a state matches under a rule if |reconstructed − published| ≤ 0.01, where the reconstructed score is unrounded and the published score is as printed to two decimals.
-- **Choice of rule:** the rule with the smallest maximum absolute error across states is chosen; ties are broken by the smallest number of mismatching states.
+- **Reported for each rule:** the number of matching states, the maximum absolute error, and the list of mismatching states with their errors. Mismatches are examined for a common cause (for example, a UT, a small denominator, or a definitional mismatch of §5.5).
 - **Verdict:**
-  - **reproduced:** a rule matches every state;
-  - **partially reproduced:** the chosen rule matches some states but not all. The mismatches are listed and examined for a common cause (for example, a UT, a small denominator, or a missing indicator);
-  - **not reproducible:** no rule matches any state. The paper then states what further information would make the score reproducible.
+  - **reproduced:** a rule matches every computable state;
+  - otherwise, **not reproducible** against R1–R4. The paper then states what further information would make the score reproducible.
+- **Ranking of rules:** rules are ranked by the smallest maximum absolute error across computable states, with ties broken by the fewest mismatching states. This ranking selects the rule for Q2–Q4 (§7.3).
 
-### 7.2 Partial reconstruction (indicator 7, and possibly 9, missing)
+### 7.2 Partial reconstruction (indicator 7, and possibly 9 or 1, missing)
 
 - For each rule, each state's residual is published score − partial score.
-- A rule is **admissible** only if every state's residual lies between 0 and the missing indicators' maximum points, with the tolerance of §7.1 at both bounds: −0.01 ≤ residual ≤ missing points + 0.01.
+- **Admissibility band:** a rule is **admissible** only if every computable state's residual lies between 0 and the missing indicators' maximum points, with the tolerance of §7.1 at both bounds: −0.01 ≤ residual ≤ missing points + 0.01.
+- **Assumption:** the band assumes that each missing indicator's achievement satisfies a ≤ 1, so that its points lie between 0 and its maximum. Under R1 and R3 this holds by construction. Under R2 it is an assumption: an expenditure ratio (indicator 7) above 1 would give points above the maximum, and the paper states this.
+- **Violation:** for a state, the violation is the distance of its residual outside the band, max(0, −0.01 − residual, residual − (missing points + 0.01)); for a rule, it is the maximum violation over computable states.
 - **Verdict:**
-  - exactly one admissible rule: **partially reproduced**, under that rule;
-  - several admissible rules: **cannot discriminate**. Q1 cannot tell the rules apart, and Q2–Q4 are run under each admissible rule;
+  - exactly one admissible rule Rk: **"consistent with rule Rk; not fully reproducible because indicator(s) <list of missing indicators> are unpublished"**;
+  - two or more admissible rules: **cannot discriminate**; Q1 cannot tell the admissible rules apart;
   - no admissible rule: **not reproducible** against R1–R4.
+- For each rule, the number of states inside the band, the maximum violation and the list of states outside the band are reported.
 
-States whose score is not computable (§5.2) are excluded from the comparison of rules and listed.
+### 7.3 The rule and the score used by Q2–Q4
 
-### 7.3 The score used by Q2–Q4
+**Rule.**
 
-- If the full score is reproduced, Q2–Q4 use it, under the chosen rule.
-- Otherwise, Q2–Q4 use the **rescaled partial score** (§6.2) as the primary analysis, with the unrescaled partial score as a check.
-- Q2–Q4 are run in either case, because each concerns the indicators, not the published total.
+- Full reconstruction, reproduced: the rule that reproduces the score. If more than one rule matches every computable state, the ranking of §7.1 chooses between them; if they remain tied, Q2–Q4 are run under each.
+- Full reconstruction, not reproduced: the first-ranked rule of §7.1 (smallest maximum absolute error, then fewest mismatches).
+- Partial reconstruction, exactly one admissible rule: that rule.
+- Partial reconstruction, cannot discriminate: Q2–Q4 are run under each admissible rule.
+- Partial reconstruction, no admissible rule: the rule with the smallest maximum violation of the admissibility band (ties broken by the fewest states outside the band). Q2–Q4 are also run under each of R1, R2 and R3 as a sensitivity analysis.
+
+**Score.**
+
+- With all nine indicators available, the full score (§6.2).
+- Otherwise, the **rescaled partial score** (§6.2) is the primary analysis, with the unrescaled partial score as a check.
+- Q2–Q4 are run in every case, because each concerns the indicators, not the published total.
 
 ## 8. Q2: robustness
 
@@ -163,35 +184,37 @@ Each variant is computed under the rule, or each of the rules, fixed by §7.3.
 1. **Weight perturbation.** Weights are drawn from a Dirichlet distribution around CTD's weights w_i = pts_i ÷ 100, with alpha_i = c × w_i. Each draw is generated with the Python standard library (`random.gammavariate`, normalised to sum 1) and multiplied by 100, so that the points sum to 100.
    - **Primary setting:** c = 63. The coefficient of variation of weight i is √((1 − w_i) ÷ (w_i (c + 1))): 0.25 for the 20-point indicator, 0.30 for the 15-point indicators, 0.375 for the 10-point indicators and 0.54 for the 5-point indicators.
    - **Extreme bound:** alpha_i = 1 for every i (total concentration 9, one per indicator).
-   - 10,000 draws for each setting; random seed **20261117**.
+   - 10,000 draws for each setting. The random seed is **20261117**, and it is reset to 20261117 before each weight setting and before each rule, so that every setting and every rule uses the same sequence of draws.
    - Where indicators are missing, the Dirichlet is taken over the available indicators, with w_i the CTD weights rescaled to sum to 1.
 2. **Leave one indicator out.** Each available indicator is dropped in turn, and the remaining points are rescaled to 100.
-3. **Notification against estimated burden.** Indicator 1 with an estimate of TB burden in place of CTD's target as its denominator. If §5.3 finds that annexure 1.2 "expected" and the target are the same quantity, the variant needs an independent state-wise burden estimate; scaling ICMR prevalence to incidence is not attempted. If no independent estimate exists, the variant is dropped and the paper says so.
+3. **Notification against estimated burden.** Run only if §5.3 finds that annexure 1.2 "expected" and CTD's target disagree. Indicator 1 is then added to the score with annexure 1.2 "expected" as its denominator, as the burden denominator. If they agree, the variant is dropped, as fixed in §5.3. No other burden source, and no scaling of ICMR prevalence to incidence, is used except as a logged exploratory deviation.
 4. **Treatment success on the matched cohort.** Indicator 4 with the matched-cohort denominator (the patients notified in the previous year, whose outcomes the annexures report) in place of the denominator in CTD's definition.
 5. **Removal of saturated indicators.** An indicator is **saturated** if at least 80% of the states for which it is computable have a ≥ 0.95 (both bounds inclusive). All saturated indicators are removed together, and the remaining points are rescaled to 100. If no indicator is saturated, the variant is reported as empty.
 
 ### 8.2 Rank measures
 
-States are ranked from 1 (highest score) to n; tied scores receive the average of the ranks they span. For each variant, against the base ranking (the score of §7.3):
+States are ranked from 1 (highest score) to n; tied scores receive the average of the ranks they span. Each variant is compared with the base ranking (the score of §7.3):
 
-- the **median** and the **maximum absolute change in rank** across states;
-- for the weight perturbation, the **share of draws in which each state stays in the top fifth or in the bottom fifth** of the base ranking: 7 units each when 36 units are ranked, ⌊n/5⌋ units when n units are computable;
-- the **Spearman rank correlation with the published ranking** (Table 11.2), as a technical measure of agreement; for the weight perturbation, its median and its 2.5th and 97.5th percentiles over draws.
+- **Rank change.** For each deterministic variant (items 2–5), the **median** and the **maximum absolute change in rank** across states. For the weight perturbation, the median and the maximum absolute change in rank across states are computed for each draw, and the **median and interquartile range of each over the draws** are reported.
+- **Top and bottom fifth.** For the weight perturbation, the **share of draws in which each state stays in the top fifth or in the bottom fifth** of the base ranking: 7 units each when 36 units are ranked, ⌊n/5⌋ units when n units are computable.
+- **Agreement with the published ranking.** The **Spearman rank correlation with the published ranking** (Table 11.2), as a technical measure of agreement; for the weight perturbation, its median and its 2.5th and 97.5th percentiles over draws.
+- **Quantiles** over draws are computed with `statistics.quantiles(..., method="inclusive")`: n = 4 for the interquartile range, and n = 40 for the 2.5th and 97.5th percentiles (the first and last cut points).
 
 ## 9. Q3: validity
 
 ### 9.1 Primary measure
 
-- **Measure:** Spearman's ρ between the State TB Score and TB prevalence from the ICMR National TB Prevalence Survey 2019–21, over the survey's state and state-group reporting units. The prevalence used is the survey's state-level estimate as printed for each reporting unit; its 95% CI is recorded.
-- **Aggregation:** where a reporting unit contains several states, the unit's score is the population-weighted mean of its member states' scores (populations as in §3). States the survey does not cover are listed and excluded.
+- **Measure:** Spearman's ρ between the score of §7.3 (not the published Table 11.2 score) for score year 2023 and TB prevalence from the ICMR National TB Prevalence Survey 2019–21, over the survey's state and state-group reporting units.
+- **Prevalence:** microbiologically confirmed pulmonary TB per 100,000 population aged 15 years and over, the survey's primary outcome, with its 95% CI recorded. If the state or state-group table prints a different single measure, that measure is used and named. If it prints several, the microbiologically confirmed pulmonary TB, age ≥ 15 years measure is used.
+- **Aggregation:** where a reporting unit contains several states, the unit's score is the population-weighted mean of its member states' scores. Each state's population is taken from annexure 1.2 of the 2024 edition as notified patients ÷ notification rate per 100,000 × 10⁵ (§3). States the survey does not cover are listed and excluded.
 - **Ties:** average ranks; ρ is the Pearson correlation of the ranks.
-- **Interval:** Fisher-z 95% confidence interval: z = atanh(ρ), SE = 1 ÷ √(n − 3), interval tanh(z ± 1.96 × SE). The number of units n is stated with every estimate. If n ≤ 3, no interval is given.
+- **Interval:** Fisher-z 95% confidence interval with Fieller's variance for Spearman's ρ: z = atanh(ρ), SE = √(1.06 ÷ (n − 3)), interval tanh(z ± 1.96 × SE). The number of units n is stated with every estimate. If n ≤ 3, no interval is given. Every Spearman interval in this plan is computed this way.
 - **Expected direction under validity:** negative (higher score, lower prevalence).
 
 ### 9.2 Secondary measures
 
-- Spearman's ρ, with its Fisher-z 95% CI and n, between the score and **MDR/RR-TB treatment success** by state (annexure 4.13), an outcome not in the score.
-- The primary analysis repeated with the score for **score year 2020**, the year closest to the survey.
+- Spearman's ρ, with its 95% CI (§9.1) and n, between the score of §7.3 and **MDR/RR-TB treatment success** by state (annexure 4.13), an outcome not in the score.
+- The primary analysis repeated with the score for **score year 2020**, the year closest to the survey: the 2020 indicators re-scored under the §7.3 rule, with the published 2020 score, where printed, as a check.
 
 ### 9.3 Measures not used for validity
 
@@ -216,11 +239,18 @@ For each state s, indicator i and score year t, the standard error of the achiev
 - **Indicator 3** (against the 70% benchmark): binomial on the proportion tested, p = numerator ÷ net notified, with n = net notified; then se = √(p (1 − p) ÷ n) ÷ 0.7.
 - **Indicators 2, 4, 5, 6, 8 and 9:** binomial, se = √(a (1 − a) ÷ n), where n is the indicator's denominator.
 - **A binomial indicator with a > 1** is a data error. It is flagged, and its se is not computable.
-- **Indicator 7** (an expenditure ratio, not a count) and any indicator taken from a table that prints a percentage without its numerator and denominator (§5.4, item 3) have se = 0. This understates noise, and so makes a change more likely to be judged as exceeding it.
+- **Indicator 7** (an expenditure ratio, not a count) and any indicator taken from a table that prints a percentage without its numerator and denominator (§5.4, item 3) have se = 0.
 
 The standard error of the score is SE_s,t = √(Σ_i pts_i² × se_si²), summed over the indicators in the score, with pts_i the points in use (rescaled where §7.3 rescales). Under R3, pts_i is divided by the maximum achievement over states, which is treated as fixed. If any indicator's se is not computable for a state, that state's SE is not computable; the state is excluded from §10.3 and listed.
 
-The same uncapped standard errors are used under every rule. Under R1 this overstates noise for a state whose achievement is at or above the cap, because capped points do not vary; the error is conservative, in that it makes a change less likely to be judged as exceeding noise.
+The same uncapped standard errors are used under every rule.
+
+**Direction of bias.** The two simplifications act in opposite directions, so the overall bias is mixed:
+
+- se = 0 for indicator 7 and for percentage-only tables understates noise. It is anti-conservative: a change is more likely to be judged as exceeding noise.
+- The uncapped se under R1 overstates noise for a state whose achievement is at or above the cap, because capped points do not vary. It is conservative: a change is less likely to be judged as exceeding noise.
+
+The number of states with at least one se = 0 component is reported for each score year.
 
 ### 10.3 Criterion
 
@@ -228,11 +258,14 @@ A state's change between years t − 1 and t **exceeds noise** if
 
 |score_t − score_(t−1)| > 1.96 × √(SE_t² + SE_(t−1)²).
 
-The primary result is the **share of states whose published change exceeds noise**, given with the count and the number of states compared, for each pair of years.
+The primary result is the **share of states whose change exceeds noise**, given with the count and the number of states compared, for each pair of years. Which change is primary follows §10.1:
+
+- if the definition (indicators, points or denominators) changed between the two years, the **re-scored change (b)** is primary and the published change (a) is secondary;
+- otherwise, the **published change (a)** is primary and the re-scored change (b) is secondary.
 
 ### 10.4 Regression from a low year
 
-As a descriptive measure of what a "% improvement" deliverable rewards, Spearman's ρ between score_(t−1) and the change score_t − score_(t−1) is reported with its Fisher-z 95% CI and n, together with each state's change expressed as a percentage of score_(t−1). Small-denominator UTs are identified in the output.
+As a descriptive measure of what a "% improvement" deliverable rewards, Spearman's ρ between score_(t−1) and the change score_t − score_(t−1) is reported with its 95% CI (§9.1) and n, together with each state's change expressed as a percentage of score_(t−1). Small-denominator UTs are identified in the output.
 
 ## 11. Software and reproducibility
 
