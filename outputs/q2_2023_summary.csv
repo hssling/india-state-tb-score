@@ -1,0 +1,40 @@
+rule,role,variant,setting,n_compared,note,median_change,median_change_q1,median_change_q3,max_change,max_change_q1,max_change_q3,spearman,spearman_p2.5,spearman_p97.5
+R2,primary,base,,35,,0.0,,,0.0,,,0.8865546218487395,,
+R2,primary,2_loo_drop_1,,35,,3.0,,,10.0,,,0.7795518207282913,,
+R2,primary,2_loo_drop_2,,35,,0.0,,,4.0,,,0.8938375350140056,,
+R2,primary,2_loo_drop_3,,35,,2.0,,,6.0,,,0.8319327731092437,,
+R2,primary,2_loo_drop_4,,35,,1.0,,,14.0,,,0.9274509803921569,,
+R2,primary,2_loo_drop_5,,35,,1.0,,,5.0,,,0.8373230373230374,,
+R2,primary,2_loo_drop_6,,35,,1.0,,,8.0,,,0.8918767507002802,,
+R2,primary,2_loo_drop_8,,35,,1.0,,,4.0,,,0.8722689075630252,,
+R2,primary,3_burden,,,variant 3 dropped: 5.3 AGREE (annexure 1.2 'expected' equals CTD's target within 0.1%),,,,,,,,,
+R2,primary,4_matched_cohort,,35,,1.0,,,11.0,,,0.9313725490196079,,
+R2,primary,5_saturated_removed,,,empty,,,,,,,,,
+R2,primary,1_weights,c63,35,10000 draws; seed 20261117,1.0,1.0,1.0,5.0,4.0,6.0,0.873109243697479,0.823249299719888,0.9268977591036416
+R2,primary,1_weights,alpha1,35,10000 draws; seed 20261117,3.0,2.0,4.0,13.0,11.0,16.0,0.7680672268907563,0.6072829131652661,0.9137324929971988
+R1,sensitivity,base,,35,,0.0,,,0.0,,,0.9322128851540616,,
+R1,sensitivity,2_loo_drop_1,,35,,3.0,,,12.0,,,0.7795518207282913,,
+R1,sensitivity,2_loo_drop_2,,35,,0.0,,,4.0,,,0.9420168067226891,,
+R1,sensitivity,2_loo_drop_3,,35,,2.0,,,7.0,,,0.8789915966386554,,
+R1,sensitivity,2_loo_drop_4,,35,,1.0,,,6.0,,,0.9274509803921569,,
+R1,sensitivity,2_loo_drop_5,,35,,1.0,,,5.0,,,0.8906048906048906,,
+R1,sensitivity,2_loo_drop_6,,35,,1.0,,,8.0,,,0.9411764705882353,,
+R1,sensitivity,2_loo_drop_8,,35,,1.0,,,6.0,,,0.9252100840336135,,
+R1,sensitivity,3_burden,,,variant 3 dropped: 5.3 AGREE (annexure 1.2 'expected' equals CTD's target within 0.1%),,,,,,,,,
+R1,sensitivity,4_matched_cohort,,35,,1.0,,,5.0,,,0.9327731092436975,,
+R1,sensitivity,5_saturated_removed,,,empty,,,,,,,,,
+R1,sensitivity,1_weights,c63,35,10000 draws; seed 20261117,1.0,1.0,1.0,6.0,4.0,8.0,0.9159663865546218,0.8392156862745097,0.957422969187675
+R1,sensitivity,1_weights,alpha1,35,10000 draws; seed 20261117,3.0,2.0,4.0,13.0,11.0,16.0,0.7700280112044818,0.6089635854341736,0.9296918767507003
+R3,sensitivity,base,,35,,0.0,,,0.0,,,0.8801120448179272,,
+R3,sensitivity,2_loo_drop_1,,35,,2.0,,,9.0,,,0.7711484593837535,,
+R3,sensitivity,2_loo_drop_2,,35,,1.0,,,5.0,,,0.8915966386554622,,
+R3,sensitivity,2_loo_drop_3,,35,,3.0,,,9.0,,,0.8263305322128851,,
+R3,sensitivity,2_loo_drop_4,,35,,1.0,,,11.0,,,0.9224089635854342,,
+R3,sensitivity,2_loo_drop_5,,35,,2.0,,,5.0,,,0.8416988416988417,,
+R3,sensitivity,2_loo_drop_6,,35,,1.0,,,9.0,,,0.8756302521008403,,
+R3,sensitivity,2_loo_drop_8,,35,,2.0,,,6.0,,,0.8733893557422969,,
+R3,sensitivity,3_burden,,,variant 3 dropped: 5.3 AGREE (annexure 1.2 'expected' equals CTD's target within 0.1%),,,,,,,,,
+R3,sensitivity,4_matched_cohort,,35,,1.0,,,7.0,,,0.907563025210084,,
+R3,sensitivity,5_saturated_removed,,,empty,,,,,,,,,
+R3,sensitivity,1_weights,c63,35,10000 draws; seed 20261117,1.0,1.0,1.0,5.0,4.0,7.0,0.8672268907563025,0.819047619047619,0.9226890756302522
+R3,sensitivity,1_weights,alpha1,35,10000 draws; seed 20261117,3.0,2.0,3.0,12.0,10.0,15.0,0.7582633053221288,0.6070028011204481,0.9103641456582633
