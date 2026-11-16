@@ -94,3 +94,14 @@ def test_draw_score_matches_score_at_ctd_weights():
                 assert got[s] is None
             else:
                 assert got[s] == pytest.approx(ref[s])
+
+
+def test_spearman_restricted_to_base_states():
+    from src.q2_robust import restrict_to_base
+    base = {"a": 3.0, "b": 2.0, "c": 1.0, "k": None}
+    alt = {"a": 3.0, "b": 2.0, "c": 1.0, "k": 10.0}
+    pub = {"a": 3.0, "b": 2.0, "c": 1.0, "k": 0.0}
+    assert spearman(alt, pub) < 1.0  # extra state would change rho
+    r = restrict_to_base(alt, base)
+    assert set(r) == {"a", "b", "c"}
+    assert spearman(r, pub) == pytest.approx(1.0)

@@ -5,7 +5,9 @@ Usage: python -I src/q2_robust.py <score_year>
 Reads outputs/q1_<year>_selection.json for the rules; writes
 outputs/q2_<year>_summary.csv, _fifths.csv and _saturation.csv.
 Ranks: 1 = highest score, ties average. Alt rankings are compared with the
-base on the states present in both, each ranking re-ranked within that set.
+base on the states computable in the base score (restrict_to_base), each
+ranking re-ranked within that set; Spearman with the published ranking uses
+the same set (intersected with the published states) in every variant.
 """
 import csv
 import json
@@ -25,6 +27,8 @@ SEED = 20261117
 N_DRAWS = 10000
 SETTINGS = (("c63", 63.0), ("alpha1", None))
 SAT_LEVEL = 0.95
+UNRESCALED_NOTE = ("7.3 unrescaled check: rank-identical to the rescaled score "
+                   "(constant factor); all 8.2 measures unchanged")
 VARIANT3_NOTE = ("variant 3 dropped: 5.3 AGREE (annexure 1.2 'expected' equals "
                  "CTD's target within 0.1%)")
 
@@ -132,6 +136,12 @@ def rank_shift(base, alt):
             "max_abs": max(ab) if ab else None}
 
 
+def restrict_to_base(alt, base):
+    """alt limited to the states computable in both alt and base."""
+    return {s: alt[s] for s in base
+            if base[s] is not None and alt.get(s) is not None}
+
+
 def fifth_size(n):
     return n // 5
 
@@ -227,6 +237,7 @@ def main(argv):
         base = sc.score(ach, rule, indicators=inds, rescale=True)
 
         def det(variant, alt, note=""):
+            alt = restrict_to_base(alt, base)
             sh = rank_shift(base, alt)
             summary.append({"rule": rule, "role": role, "variant": variant,
                             "n_compared": sh["n"], "note": note,
@@ -234,9 +245,14 @@ def main(argv):
                             "max_change": sh["max_abs"],
                             "spearman": spearman(alt, pub)})
 
+        # plan 7.3 unrescaled check: ranks identical (constant factor)
+        unres = sc.score(ach, rule, indicators=inds)
+        assert average_ranks(unres) == average_ranks(base), rule
         det("base", base)
         for d, alt in leave_one_out(ach, rule, inds).items():
             det(f"2_loo_drop_{d}", alt)
+        summary.append({"rule": rule, "role": role, "variant": "7.3_unrescaled_check",
+                        "note": UNRESCALED_NOTE})
         summary.append({"rule": rule, "role": role, "variant": "3_burden",
                         "note": VARIANT3_NOTE})
         det("4_matched_cohort", sc.score(ach4, rule, indicators=inds, rescale=True))
@@ -296,7 +312,10 @@ def main(argv):
                                "base_fifth": ("top" if s in top_set else
                                               "bottom" if s in bot_set else "middle"),
                                "share_top_fifth": top_ct[s] / N_DRAWS,
-                               "share_bottom_fifth": bot_ct[s] / N_DRAWS})
+                               "share_bottom_fifth": bot_ct[s] / N_DRAWS,
+                               "share_stays": (top_ct[s] / N_DRAWS if s in top_set else
+                                               bot_ct[s] / N_DRAWS if s in bot_set
+                                               else None)})
 
     with open(os.path.join(out_dir, f"q2_{year}_summary.csv"), "w", newline="") as f:
         w = csv.writer(f)
@@ -304,7 +323,7 @@ def main(argv):
         for r in summary:
             w.writerow([_cell(r.get(c)) for c in cols])
     fcols = ["state", "rule", "setting", "base_fifth", "share_top_fifth",
-             "share_bottom_fifth"]
+             "share_bottom_fifth", "share_stays"]
     with open(os.path.join(out_dir, f"q2_{year}_fifths.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(fcols)
@@ -314,6 +333,7 @@ def main(argv):
     print(f"Q2 score year {year}; indicators {inds}; rules {rules} "
           f"(primary {primary}); score kind: {sel['score_kind']}")
     print(VARIANT3_NOTE)
+    print(UNRESCALED_NOTE)
     print("saturated indicators:", sat_inds or "empty")
 
     def g(r, k):
@@ -321,7 +341,7 @@ def main(argv):
         return "-" if v in (None, "") else f"{float(v):.2f}"
 
     for r in summary:
-        if r["variant"] == "3_burden":
+        if r["variant"] in ("3_burden", "7.3_unrescaled_check"):
             continue
         if r["variant"] == "5_saturated_removed" and r.get("note") == "empty":
             print(f"{r['rule']} {r['variant']:<22}empty")

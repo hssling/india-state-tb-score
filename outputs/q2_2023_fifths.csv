@@ -1,211 +1,211 @@
-state,rule,setting,base_fifth,share_top_fifth,share_bottom_fifth
-Andaman and Nicobar Islands,R2,c63,middle,0.0062,0.0
-Andhra Pradesh,R2,c63,middle,0.0,0.0
-Arunachal Pradesh,R2,c63,bottom,0.0,0.9806
-Assam,R2,c63,middle,0.0,0.1175
-Bihar,R2,c63,bottom,0.0,1.0
-Chandigarh,R2,c63,middle,0.0,0.3714
-Chhattisgarh,R2,c63,bottom,0.0,0.6583
-Dadra and Nagar Haveli and Daman and Diu,R2,c63,top,1.0,0.0
-Delhi,R2,c63,bottom,0.0,0.8829
-Goa,R2,c63,bottom,0.0,0.4747
-Gujarat,R2,c63,middle,0.4043,0.0
-Haryana,R2,c63,middle,0.0175,0.0
-Himachal Pradesh,R2,c63,top,1.0,0.0
-Jammu and Kashmir,R2,c63,middle,0.1224,0.0
-Jharkhand,R2,c63,middle,0.0,0.0042
-Kerala,R2,c63,middle,0.0503,0.0
-Ladakh,R2,c63,top,1.0,0.0
-Lakshadweep,R2,c63,top,0.8532,0.0001
-Madhya Pradesh,R2,c63,middle,0.0,0.0
-Maharashtra,R2,c63,middle,0.0,0.0
-Manipur,R2,c63,bottom,0.0,1.0
-Meghalaya,R2,c63,middle,0.0,0.0
-Mizoram,R2,c63,middle,0.0,0.3456
-Nagaland,R2,c63,middle,0.0,0.0
-Odisha,R2,c63,top,0.926,0.0
-Puducherry,R2,c63,middle,0.2256,0.0
-Punjab,R2,c63,bottom,0.0,0.9999
-Rajasthan,R2,c63,middle,0.0,0.0
-Sikkim,R2,c63,middle,0.0846,0.0
-Tamil Nadu,R2,c63,middle,0.0001,0.0
-Telangana,R2,c63,middle,0.0,0.1638
-Tripura,R2,c63,top,0.852,0.0
-Uttar Pradesh,R2,c63,top,0.4578,0.0
-Uttarakhand,R2,c63,middle,0.0,0.0008
-West Bengal,R2,c63,middle,0.0,0.0002
-Andaman and Nicobar Islands,R2,alpha1,middle,0.0473,0.0928
-Andhra Pradesh,R2,alpha1,middle,0.0267,0.0081
-Arunachal Pradesh,R2,alpha1,bottom,0.0,0.8242
-Assam,R2,alpha1,middle,0.0,0.2366
-Bihar,R2,alpha1,bottom,0.0,1.0
-Chandigarh,R2,alpha1,middle,0.0,0.2845
-Chhattisgarh,R2,alpha1,bottom,0.0,0.2841
-Dadra and Nagar Haveli and Daman and Diu,R2,alpha1,top,0.9918,0.0
-Delhi,R2,alpha1,bottom,0.0,0.5849
-Goa,R2,alpha1,bottom,0.0,0.6857
-Gujarat,R2,alpha1,middle,0.1623,0.0
-Haryana,R2,alpha1,middle,0.4835,0.0
-Himachal Pradesh,R2,alpha1,top,1.0,0.0
-Jammu and Kashmir,R2,alpha1,middle,0.3948,0.0
-Jharkhand,R2,alpha1,middle,0.0,0.1204
-Kerala,R2,alpha1,middle,0.0707,0.0745
-Ladakh,R2,alpha1,top,0.9769,0.0
-Lakshadweep,R2,alpha1,top,0.8075,0.0288
-Madhya Pradesh,R2,alpha1,middle,0.0,0.0257
-Maharashtra,R2,alpha1,middle,0.0,0.0018
-Manipur,R2,alpha1,bottom,0.0,0.9976
-Meghalaya,R2,alpha1,middle,0.0,0.0016
-Mizoram,R2,alpha1,middle,0.0,0.1992
-Nagaland,R2,alpha1,middle,0.0,0.0
-Odisha,R2,alpha1,top,0.4909,0.0
-Puducherry,R2,alpha1,middle,0.5869,0.0084
-Punjab,R2,alpha1,bottom,0.0,0.8272
-Rajasthan,R2,alpha1,middle,0.0,0.0
-Sikkim,R2,alpha1,middle,0.1302,0.0
-Tamil Nadu,R2,alpha1,middle,0.1005,0.0
-Telangana,R2,alpha1,middle,0.0,0.4154
-Tripura,R2,alpha1,top,0.3826,0.0
-Uttar Pradesh,R2,alpha1,top,0.3474,0.0092
-Uttarakhand,R2,alpha1,middle,0.0,0.2854
-West Bengal,R2,alpha1,middle,0.0,0.0039
-Andaman and Nicobar Islands,R1,c63,middle,0.0,0.0
-Andhra Pradesh,R1,c63,middle,0.0,0.0
-Arunachal Pradesh,R1,c63,bottom,0.0,0.9806
-Assam,R1,c63,middle,0.0,0.1129
-Bihar,R1,c63,bottom,0.0,1.0
-Chandigarh,R1,c63,middle,0.0,0.3686
-Chhattisgarh,R1,c63,bottom,0.0,0.6583
-Dadra and Nagar Haveli and Daman and Diu,R1,c63,top,1.0,0.0
-Delhi,R1,c63,bottom,0.0,0.8734
-Goa,R1,c63,bottom,0.0,0.4739
-Gujarat,R1,c63,middle,0.4197,0.0
-Haryana,R1,c63,middle,0.0657,0.0
-Himachal Pradesh,R1,c63,top,1.0,0.0
-Jammu and Kashmir,R1,c63,top,0.5022,0.0
-Jharkhand,R1,c63,middle,0.0,0.0042
-Kerala,R1,c63,middle,0.2124,0.0
-Ladakh,R1,c63,top,1.0,0.0
-Lakshadweep,R1,c63,middle,0.1798,0.0193
-Madhya Pradesh,R1,c63,middle,0.0,0.0
-Maharashtra,R1,c63,middle,0.0,0.0
-Manipur,R1,c63,bottom,0.0,1.0
-Meghalaya,R1,c63,middle,0.0,0.0
-Mizoram,R1,c63,middle,0.0,0.3449
-Nagaland,R1,c63,middle,0.0,0.0
-Odisha,R1,c63,top,0.9958,0.0
-Puducherry,R1,c63,middle,0.2975,0.0
-Punjab,R1,c63,bottom,0.0,0.9999
-Rajasthan,R1,c63,middle,0.0,0.0
-Sikkim,R1,c63,top,0.6949,0.0
-Tamil Nadu,R1,c63,middle,0.0001,0.0
-Telangana,R1,c63,middle,0.0,0.1632
-Tripura,R1,c63,top,0.6238,0.0
-Uttar Pradesh,R1,c63,middle,0.0081,0.0
-Uttarakhand,R1,c63,middle,0.0,0.0008
-West Bengal,R1,c63,middle,0.0,0.0
-Andaman and Nicobar Islands,R1,alpha1,middle,0.0107,0.1275
-Andhra Pradesh,R1,alpha1,middle,0.0303,0.0073
-Arunachal Pradesh,R1,alpha1,bottom,0.0,0.8218
-Assam,R1,alpha1,middle,0.0,0.2264
-Bihar,R1,alpha1,bottom,0.0,1.0
-Chandigarh,R1,alpha1,middle,0.0,0.2795
-Chhattisgarh,R1,alpha1,bottom,0.0,0.2827
-Dadra and Nagar Haveli and Daman and Diu,R1,alpha1,top,0.9943,0.0
-Delhi,R1,alpha1,bottom,0.0,0.5747
-Goa,R1,alpha1,bottom,0.0,0.6826
-Gujarat,R1,alpha1,middle,0.1555,0.0
-Haryana,R1,alpha1,middle,0.5305,0.0
-Himachal Pradesh,R1,alpha1,top,1.0,0.0
-Jammu and Kashmir,R1,alpha1,top,0.5264,0.0
-Jharkhand,R1,alpha1,middle,0.0,0.1187
-Kerala,R1,alpha1,middle,0.1054,0.0704
-Ladakh,R1,alpha1,top,0.9478,0.0
-Lakshadweep,R1,alpha1,middle,0.6778,0.0539
-Madhya Pradesh,R1,alpha1,middle,0.0,0.0249
-Maharashtra,R1,alpha1,middle,0.0,0.0018
-Manipur,R1,alpha1,bottom,0.0,0.9974
-Meghalaya,R1,alpha1,middle,0.0,0.0015
-Mizoram,R1,alpha1,middle,0.0,0.1911
-Nagaland,R1,alpha1,middle,0.0,0.0
-Odisha,R1,alpha1,top,0.5868,0.0
-Puducherry,R1,alpha1,middle,0.6093,0.0089
-Punjab,R1,alpha1,bottom,0.0,0.8235
-Rajasthan,R1,alpha1,middle,0.0,0.0
-Sikkim,R1,alpha1,top,0.2507,0.0
-Tamil Nadu,R1,alpha1,middle,0.1058,0.0
-Telangana,R1,alpha1,middle,0.0,0.4109
-Tripura,R1,alpha1,top,0.292,0.0
-Uttar Pradesh,R1,alpha1,middle,0.1751,0.0144
-Uttarakhand,R1,alpha1,middle,0.0016,0.2788
-West Bengal,R1,alpha1,middle,0.0,0.0013
-Andaman and Nicobar Islands,R3,c63,middle,0.004,0.0
-Andhra Pradesh,R3,c63,middle,0.0,0.0
-Arunachal Pradesh,R3,c63,bottom,0.0,0.9602
-Assam,R3,c63,middle,0.0,0.1026
-Bihar,R3,c63,bottom,0.0,1.0
-Chandigarh,R3,c63,middle,0.0,0.3261
-Chhattisgarh,R3,c63,bottom,0.0,0.614
-Dadra and Nagar Haveli and Daman and Diu,R3,c63,top,1.0,0.0
-Delhi,R3,c63,bottom,0.0,0.9251
-Goa,R3,c63,bottom,0.0,0.5009
-Gujarat,R3,c63,middle,0.1666,0.0
-Haryana,R3,c63,middle,0.0621,0.0
-Himachal Pradesh,R3,c63,top,1.0,0.0
-Jammu and Kashmir,R3,c63,middle,0.1072,0.0
-Jharkhand,R3,c63,middle,0.0,0.0171
-Kerala,R3,c63,middle,0.0442,0.0
-Ladakh,R3,c63,top,1.0,0.0
-Lakshadweep,R3,c63,top,0.8638,0.0
-Madhya Pradesh,R3,c63,middle,0.0,0.0
-Maharashtra,R3,c63,middle,0.0,0.0
-Manipur,R3,c63,bottom,0.0,1.0
-Meghalaya,R3,c63,middle,0.0,0.0
-Mizoram,R3,c63,middle,0.0,0.1144
-Nagaland,R3,c63,middle,0.0,0.0
-Odisha,R3,c63,top,0.9383,0.0
-Puducherry,R3,c63,middle,0.3128,0.0
-Punjab,R3,c63,bottom,0.0,0.9999
-Rajasthan,R3,c63,middle,0.0,0.0
-Sikkim,R3,c63,top,0.2182,0.0
-Tamil Nadu,R3,c63,middle,0.0008,0.0
-Telangana,R3,c63,middle,0.0,0.4337
-Tripura,R3,c63,top,0.8888,0.0
-Uttar Pradesh,R3,c63,middle,0.3932,0.0
-Uttarakhand,R3,c63,middle,0.0,0.006
-West Bengal,R3,c63,middle,0.0,0.0
-Andaman and Nicobar Islands,R3,alpha1,middle,0.0417,0.0853
-Andhra Pradesh,R3,alpha1,middle,0.0112,0.0086
-Arunachal Pradesh,R3,alpha1,bottom,0.0,0.8143
-Assam,R3,alpha1,middle,0.0,0.2236
-Bihar,R3,alpha1,bottom,0.0,1.0
-Chandigarh,R3,alpha1,middle,0.0,0.2657
-Chhattisgarh,R3,alpha1,bottom,0.0,0.2633
-Dadra and Nagar Haveli and Daman and Diu,R3,alpha1,top,0.9889,0.0
-Delhi,R3,alpha1,bottom,0.0,0.5638
-Goa,R3,alpha1,bottom,0.0,0.6842
-Gujarat,R3,alpha1,middle,0.1078,0.0
-Haryana,R3,alpha1,middle,0.5431,0.0
-Himachal Pradesh,R3,alpha1,top,1.0,0.0
-Jammu and Kashmir,R3,alpha1,middle,0.3705,0.0
-Jharkhand,R3,alpha1,middle,0.0,0.145
-Kerala,R3,alpha1,middle,0.0619,0.0855
-Ladakh,R3,alpha1,top,0.97,0.0
-Lakshadweep,R3,alpha1,top,0.8271,0.019
-Madhya Pradesh,R3,alpha1,middle,0.0,0.0358
-Maharashtra,R3,alpha1,middle,0.0,0.0031
-Manipur,R3,alpha1,bottom,0.0,0.9953
-Meghalaya,R3,alpha1,middle,0.0,0.0011
-Mizoram,R3,alpha1,middle,0.0,0.1353
-Nagaland,R3,alpha1,middle,0.0,0.0004
-Odisha,R3,alpha1,top,0.4615,0.0
-Puducherry,R3,alpha1,middle,0.6208,0.0083
-Punjab,R3,alpha1,bottom,0.0,0.8306
-Rajasthan,R3,alpha1,middle,0.0,0.0
-Sikkim,R3,alpha1,top,0.1475,0.0
-Tamil Nadu,R3,alpha1,middle,0.1397,0.0
-Telangana,R3,alpha1,middle,0.0,0.4831
-Tripura,R3,alpha1,top,0.3838,0.0
-Uttar Pradesh,R3,alpha1,middle,0.3245,0.0062
-Uttarakhand,R3,alpha1,middle,0.0,0.3412
-West Bengal,R3,alpha1,middle,0.0,0.0013
+state,rule,setting,base_fifth,share_top_fifth,share_bottom_fifth,share_stays
+Andaman and Nicobar Islands,R2,c63,middle,0.0062,0.0,
+Andhra Pradesh,R2,c63,middle,0.0,0.0,
+Arunachal Pradesh,R2,c63,bottom,0.0,0.9806,0.9806
+Assam,R2,c63,middle,0.0,0.1175,
+Bihar,R2,c63,bottom,0.0,1.0,1.0
+Chandigarh,R2,c63,middle,0.0,0.3714,
+Chhattisgarh,R2,c63,bottom,0.0,0.6583,0.6583
+Dadra and Nagar Haveli and Daman and Diu,R2,c63,top,1.0,0.0,1.0
+Delhi,R2,c63,bottom,0.0,0.8829,0.8829
+Goa,R2,c63,bottom,0.0,0.4747,0.4747
+Gujarat,R2,c63,middle,0.4043,0.0,
+Haryana,R2,c63,middle,0.0175,0.0,
+Himachal Pradesh,R2,c63,top,1.0,0.0,1.0
+Jammu and Kashmir,R2,c63,middle,0.1224,0.0,
+Jharkhand,R2,c63,middle,0.0,0.0042,
+Kerala,R2,c63,middle,0.0503,0.0,
+Ladakh,R2,c63,top,1.0,0.0,1.0
+Lakshadweep,R2,c63,top,0.8532,0.0001,0.8532
+Madhya Pradesh,R2,c63,middle,0.0,0.0,
+Maharashtra,R2,c63,middle,0.0,0.0,
+Manipur,R2,c63,bottom,0.0,1.0,1.0
+Meghalaya,R2,c63,middle,0.0,0.0,
+Mizoram,R2,c63,middle,0.0,0.3456,
+Nagaland,R2,c63,middle,0.0,0.0,
+Odisha,R2,c63,top,0.926,0.0,0.926
+Puducherry,R2,c63,middle,0.2256,0.0,
+Punjab,R2,c63,bottom,0.0,0.9999,0.9999
+Rajasthan,R2,c63,middle,0.0,0.0,
+Sikkim,R2,c63,middle,0.0846,0.0,
+Tamil Nadu,R2,c63,middle,0.0001,0.0,
+Telangana,R2,c63,middle,0.0,0.1638,
+Tripura,R2,c63,top,0.852,0.0,0.852
+Uttar Pradesh,R2,c63,top,0.4578,0.0,0.4578
+Uttarakhand,R2,c63,middle,0.0,0.0008,
+West Bengal,R2,c63,middle,0.0,0.0002,
+Andaman and Nicobar Islands,R2,alpha1,middle,0.0473,0.0928,
+Andhra Pradesh,R2,alpha1,middle,0.0267,0.0081,
+Arunachal Pradesh,R2,alpha1,bottom,0.0,0.8242,0.8242
+Assam,R2,alpha1,middle,0.0,0.2366,
+Bihar,R2,alpha1,bottom,0.0,1.0,1.0
+Chandigarh,R2,alpha1,middle,0.0,0.2845,
+Chhattisgarh,R2,alpha1,bottom,0.0,0.2841,0.2841
+Dadra and Nagar Haveli and Daman and Diu,R2,alpha1,top,0.9918,0.0,0.9918
+Delhi,R2,alpha1,bottom,0.0,0.5849,0.5849
+Goa,R2,alpha1,bottom,0.0,0.6857,0.6857
+Gujarat,R2,alpha1,middle,0.1623,0.0,
+Haryana,R2,alpha1,middle,0.4835,0.0,
+Himachal Pradesh,R2,alpha1,top,1.0,0.0,1.0
+Jammu and Kashmir,R2,alpha1,middle,0.3948,0.0,
+Jharkhand,R2,alpha1,middle,0.0,0.1204,
+Kerala,R2,alpha1,middle,0.0707,0.0745,
+Ladakh,R2,alpha1,top,0.9769,0.0,0.9769
+Lakshadweep,R2,alpha1,top,0.8075,0.0288,0.8075
+Madhya Pradesh,R2,alpha1,middle,0.0,0.0257,
+Maharashtra,R2,alpha1,middle,0.0,0.0018,
+Manipur,R2,alpha1,bottom,0.0,0.9976,0.9976
+Meghalaya,R2,alpha1,middle,0.0,0.0016,
+Mizoram,R2,alpha1,middle,0.0,0.1992,
+Nagaland,R2,alpha1,middle,0.0,0.0,
+Odisha,R2,alpha1,top,0.4909,0.0,0.4909
+Puducherry,R2,alpha1,middle,0.5869,0.0084,
+Punjab,R2,alpha1,bottom,0.0,0.8272,0.8272
+Rajasthan,R2,alpha1,middle,0.0,0.0,
+Sikkim,R2,alpha1,middle,0.1302,0.0,
+Tamil Nadu,R2,alpha1,middle,0.1005,0.0,
+Telangana,R2,alpha1,middle,0.0,0.4154,
+Tripura,R2,alpha1,top,0.3826,0.0,0.3826
+Uttar Pradesh,R2,alpha1,top,0.3474,0.0092,0.3474
+Uttarakhand,R2,alpha1,middle,0.0,0.2854,
+West Bengal,R2,alpha1,middle,0.0,0.0039,
+Andaman and Nicobar Islands,R1,c63,middle,0.0,0.0,
+Andhra Pradesh,R1,c63,middle,0.0,0.0,
+Arunachal Pradesh,R1,c63,bottom,0.0,0.9806,0.9806
+Assam,R1,c63,middle,0.0,0.1129,
+Bihar,R1,c63,bottom,0.0,1.0,1.0
+Chandigarh,R1,c63,middle,0.0,0.3686,
+Chhattisgarh,R1,c63,bottom,0.0,0.6583,0.6583
+Dadra and Nagar Haveli and Daman and Diu,R1,c63,top,1.0,0.0,1.0
+Delhi,R1,c63,bottom,0.0,0.8734,0.8734
+Goa,R1,c63,bottom,0.0,0.4739,0.4739
+Gujarat,R1,c63,middle,0.4197,0.0,
+Haryana,R1,c63,middle,0.0657,0.0,
+Himachal Pradesh,R1,c63,top,1.0,0.0,1.0
+Jammu and Kashmir,R1,c63,top,0.5022,0.0,0.5022
+Jharkhand,R1,c63,middle,0.0,0.0042,
+Kerala,R1,c63,middle,0.2124,0.0,
+Ladakh,R1,c63,top,1.0,0.0,1.0
+Lakshadweep,R1,c63,middle,0.1798,0.0193,
+Madhya Pradesh,R1,c63,middle,0.0,0.0,
+Maharashtra,R1,c63,middle,0.0,0.0,
+Manipur,R1,c63,bottom,0.0,1.0,1.0
+Meghalaya,R1,c63,middle,0.0,0.0,
+Mizoram,R1,c63,middle,0.0,0.3449,
+Nagaland,R1,c63,middle,0.0,0.0,
+Odisha,R1,c63,top,0.9958,0.0,0.9958
+Puducherry,R1,c63,middle,0.2975,0.0,
+Punjab,R1,c63,bottom,0.0,0.9999,0.9999
+Rajasthan,R1,c63,middle,0.0,0.0,
+Sikkim,R1,c63,top,0.6949,0.0,0.6949
+Tamil Nadu,R1,c63,middle,0.0001,0.0,
+Telangana,R1,c63,middle,0.0,0.1632,
+Tripura,R1,c63,top,0.6238,0.0,0.6238
+Uttar Pradesh,R1,c63,middle,0.0081,0.0,
+Uttarakhand,R1,c63,middle,0.0,0.0008,
+West Bengal,R1,c63,middle,0.0,0.0,
+Andaman and Nicobar Islands,R1,alpha1,middle,0.0107,0.1275,
+Andhra Pradesh,R1,alpha1,middle,0.0303,0.0073,
+Arunachal Pradesh,R1,alpha1,bottom,0.0,0.8218,0.8218
+Assam,R1,alpha1,middle,0.0,0.2264,
+Bihar,R1,alpha1,bottom,0.0,1.0,1.0
+Chandigarh,R1,alpha1,middle,0.0,0.2795,
+Chhattisgarh,R1,alpha1,bottom,0.0,0.2827,0.2827
+Dadra and Nagar Haveli and Daman and Diu,R1,alpha1,top,0.9943,0.0,0.9943
+Delhi,R1,alpha1,bottom,0.0,0.5747,0.5747
+Goa,R1,alpha1,bottom,0.0,0.6826,0.6826
+Gujarat,R1,alpha1,middle,0.1555,0.0,
+Haryana,R1,alpha1,middle,0.5305,0.0,
+Himachal Pradesh,R1,alpha1,top,1.0,0.0,1.0
+Jammu and Kashmir,R1,alpha1,top,0.5264,0.0,0.5264
+Jharkhand,R1,alpha1,middle,0.0,0.1187,
+Kerala,R1,alpha1,middle,0.1054,0.0704,
+Ladakh,R1,alpha1,top,0.9478,0.0,0.9478
+Lakshadweep,R1,alpha1,middle,0.6778,0.0539,
+Madhya Pradesh,R1,alpha1,middle,0.0,0.0249,
+Maharashtra,R1,alpha1,middle,0.0,0.0018,
+Manipur,R1,alpha1,bottom,0.0,0.9974,0.9974
+Meghalaya,R1,alpha1,middle,0.0,0.0015,
+Mizoram,R1,alpha1,middle,0.0,0.1911,
+Nagaland,R1,alpha1,middle,0.0,0.0,
+Odisha,R1,alpha1,top,0.5868,0.0,0.5868
+Puducherry,R1,alpha1,middle,0.6093,0.0089,
+Punjab,R1,alpha1,bottom,0.0,0.8235,0.8235
+Rajasthan,R1,alpha1,middle,0.0,0.0,
+Sikkim,R1,alpha1,top,0.2507,0.0,0.2507
+Tamil Nadu,R1,alpha1,middle,0.1058,0.0,
+Telangana,R1,alpha1,middle,0.0,0.4109,
+Tripura,R1,alpha1,top,0.292,0.0,0.292
+Uttar Pradesh,R1,alpha1,middle,0.1751,0.0144,
+Uttarakhand,R1,alpha1,middle,0.0016,0.2788,
+West Bengal,R1,alpha1,middle,0.0,0.0013,
+Andaman and Nicobar Islands,R3,c63,middle,0.004,0.0,
+Andhra Pradesh,R3,c63,middle,0.0,0.0,
+Arunachal Pradesh,R3,c63,bottom,0.0,0.9602,0.9602
+Assam,R3,c63,middle,0.0,0.1026,
+Bihar,R3,c63,bottom,0.0,1.0,1.0
+Chandigarh,R3,c63,middle,0.0,0.3261,
+Chhattisgarh,R3,c63,bottom,0.0,0.614,0.614
+Dadra and Nagar Haveli and Daman and Diu,R3,c63,top,1.0,0.0,1.0
+Delhi,R3,c63,bottom,0.0,0.9251,0.9251
+Goa,R3,c63,bottom,0.0,0.5009,0.5009
+Gujarat,R3,c63,middle,0.1666,0.0,
+Haryana,R3,c63,middle,0.0621,0.0,
+Himachal Pradesh,R3,c63,top,1.0,0.0,1.0
+Jammu and Kashmir,R3,c63,middle,0.1072,0.0,
+Jharkhand,R3,c63,middle,0.0,0.0171,
+Kerala,R3,c63,middle,0.0442,0.0,
+Ladakh,R3,c63,top,1.0,0.0,1.0
+Lakshadweep,R3,c63,top,0.8638,0.0,0.8638
+Madhya Pradesh,R3,c63,middle,0.0,0.0,
+Maharashtra,R3,c63,middle,0.0,0.0,
+Manipur,R3,c63,bottom,0.0,1.0,1.0
+Meghalaya,R3,c63,middle,0.0,0.0,
+Mizoram,R3,c63,middle,0.0,0.1144,
+Nagaland,R3,c63,middle,0.0,0.0,
+Odisha,R3,c63,top,0.9383,0.0,0.9383
+Puducherry,R3,c63,middle,0.3128,0.0,
+Punjab,R3,c63,bottom,0.0,0.9999,0.9999
+Rajasthan,R3,c63,middle,0.0,0.0,
+Sikkim,R3,c63,top,0.2182,0.0,0.2182
+Tamil Nadu,R3,c63,middle,0.0008,0.0,
+Telangana,R3,c63,middle,0.0,0.4337,
+Tripura,R3,c63,top,0.8888,0.0,0.8888
+Uttar Pradesh,R3,c63,middle,0.3932,0.0,
+Uttarakhand,R3,c63,middle,0.0,0.006,
+West Bengal,R3,c63,middle,0.0,0.0,
+Andaman and Nicobar Islands,R3,alpha1,middle,0.0417,0.0853,
+Andhra Pradesh,R3,alpha1,middle,0.0112,0.0086,
+Arunachal Pradesh,R3,alpha1,bottom,0.0,0.8143,0.8143
+Assam,R3,alpha1,middle,0.0,0.2236,
+Bihar,R3,alpha1,bottom,0.0,1.0,1.0
+Chandigarh,R3,alpha1,middle,0.0,0.2657,
+Chhattisgarh,R3,alpha1,bottom,0.0,0.2633,0.2633
+Dadra and Nagar Haveli and Daman and Diu,R3,alpha1,top,0.9889,0.0,0.9889
+Delhi,R3,alpha1,bottom,0.0,0.5638,0.5638
+Goa,R3,alpha1,bottom,0.0,0.6842,0.6842
+Gujarat,R3,alpha1,middle,0.1078,0.0,
+Haryana,R3,alpha1,middle,0.5431,0.0,
+Himachal Pradesh,R3,alpha1,top,1.0,0.0,1.0
+Jammu and Kashmir,R3,alpha1,middle,0.3705,0.0,
+Jharkhand,R3,alpha1,middle,0.0,0.145,
+Kerala,R3,alpha1,middle,0.0619,0.0855,
+Ladakh,R3,alpha1,top,0.97,0.0,0.97
+Lakshadweep,R3,alpha1,top,0.8271,0.019,0.8271
+Madhya Pradesh,R3,alpha1,middle,0.0,0.0358,
+Maharashtra,R3,alpha1,middle,0.0,0.0031,
+Manipur,R3,alpha1,bottom,0.0,0.9953,0.9953
+Meghalaya,R3,alpha1,middle,0.0,0.0011,
+Mizoram,R3,alpha1,middle,0.0,0.1353,
+Nagaland,R3,alpha1,middle,0.0,0.0004,
+Odisha,R3,alpha1,top,0.4615,0.0,0.4615
+Puducherry,R3,alpha1,middle,0.6208,0.0083,
+Punjab,R3,alpha1,bottom,0.0,0.8306,0.8306
+Rajasthan,R3,alpha1,middle,0.0,0.0,
+Sikkim,R3,alpha1,top,0.1475,0.0,0.1475
+Tamil Nadu,R3,alpha1,middle,0.1397,0.0,
+Telangana,R3,alpha1,middle,0.0,0.4831,
+Tripura,R3,alpha1,top,0.3838,0.0,0.3838
+Uttar Pradesh,R3,alpha1,middle,0.3245,0.0062,
+Uttarakhand,R3,alpha1,middle,0.0,0.3412,
+West Bengal,R3,alpha1,middle,0.0,0.0013,
