@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this code or the analysis plan, please cite it as below."
+title: "India's State TB Score: reproducibility, robustness and validity — analysis code and pre-registered plan"
+abstract: >-
+  Pre-registered analysis plan, and the code that will implement it, for a
+  test of India's State TB Score: whether the published 2023 State TB Scores
+  can be reproduced from the indicator values the India TB Report publishes,
+  how stable the ranking is to defensible alternative choices, whether higher
+  scores go with lower TB prevalence in the ICMR National TB Prevalence Survey
+  2019-21, and whether year-on-year changes in the score exceed indicator
+  noise.
+type: software
+authors:
+  - family-names: "Siddalingaiah"
+    given-names: "H S"
+    orcid: "https://orcid.org/0000-0002-4771-8285"
+    affiliation: >-
+      Department of Community Medicine, Shridevi Institute of Medical Sciences
+      and Research Hospital, Tumkur, Karnataka, India
+license: MIT
+repository-code: "https://github.com/hssling/india-state-tb-score"
+keywords:
+  - tuberculosis
+  - India
+  - National TB Elimination Programme
+  - composite indicators
+  - performance measurement
+  - reproducibility
+  - pre-registration
