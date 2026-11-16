@@ -283,6 +283,8 @@ As a descriptive measure of what a "% improvement" deliverable rewards, Spearman
 
 ## 13. Deviations
 
+**Registration point.** This plan, as of commit 999da8b, was pushed to the public repository https://github.com/hssling/india-state-tb-score at 2026-11-16T19:06:50Z (17 November 2026, 00:36 IST), as recorded by GitHub's `pushed_at` for the repository. At that point no indicator value had been extracted and nothing had been computed. Every later commit is after registration.
+
 Deviations from this plan are logged here, each with its date.
 
 **As of 17 November 2026: none.**
