@@ -164,8 +164,18 @@ def test_committed_csvs_match_extraction(tmp_path):
                  "itr2024_drtb_outcomes.csv", "itr2024_tsr_cohort.csv"):
         assert (tmp_path / "extracted" / name).read_text(encoding="utf-8") == \
             (EXTRACTED / name).read_text(encoding="utf-8"), name
-    assert (tmp_path / "source_choices.csv").read_text(encoding="utf-8") == \
-        Path("data/source_choices.csv").read_text(encoding="utf-8")
+    # data/source_choices.csv and definitions.csv also hold other years' rows
+    assert _rows_of(tmp_path / "source_choices.csv", "score_year", "2023") == \
+        _rows_of(Path("data/source_choices.csv"), "score_year", "2023")
+    assert _rows_of(tmp_path / "extracted" / "definitions.csv", "edition", "2024") == \
+        _rows_of(EXTRACTED / "definitions.csv", "edition", "2024")
+
+
+def _rows_of(path: Path, key: str, value: str) -> list[dict]:
+    with open(path, encoding="utf-8", newline="") as f:
+        rows = [r for r in csv.DictReader(f) if r[key] == value]
+    assert rows, (path, value)
+    return rows
 
 
 def test_source_choices_cover_every_indicator():

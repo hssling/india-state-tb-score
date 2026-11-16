@@ -5,7 +5,8 @@ check, §5.4 source rules, §5.5 mismatches). Every extracted table is checked
 against the national row the report prints; a mismatch stops the run.
 
 Run: python -I src/extract/itr2024.py
-Writes data/extracted/itr2024_*.csv, data/source_choices.csv and
+Writes data/extracted/itr2024_*.csv, its rows of data/source_choices.csv and
+data/extracted/definitions.csv (other years' rows are kept), and
 outputs/q1_target_check.txt. No score is computed here.
 
 In itr2024_indicators.csv, pdf_page and table_id are "numerator;denominator"
@@ -27,7 +28,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(ROOT))
 
 from src import states  # noqa: E402
-from src.extract import cells, pdftext  # noqa: E402
+from src.extract import annex, cells, pdftext  # noqa: E402
 
 PDF = ROOT / "data_raw" / "india_tb_report" / "ITR2024.pdf"
 SOURCE_FILE = "data_raw/india_tb_report/ITR2024.pdf"
@@ -640,6 +641,45 @@ def source_choices(check: dict, tables: dict[str, Table], udst_kpi_pct: int) -> 
     return [{"score_year": SCORE_YEAR, **dict(zip(cols, r))} for r in rows]
 
 
+# ---- definition stated by the edition (plan §5.4 item 6) --------------------
+
+EDITION = 2024
+# Chapter 11 text beside Table 11.2 (PDF p. 123), set in two columns; each
+# fragment is checked against the page text.
+_DEF_FRAGMENTS = (
+    "For continuous monitoring of the",
+    "programmatic performance at all levels, a",
+    "composite score is calculated from a selected list",
+    "of KPIs from various thematic areas under NTEP.",
+    "Appropriate weightage has been given to each",
+    "of these indicators and individual States/UTs are",
+    "scored for performance against every indicator.",
+    "The individual indicators sum up to a total of 100.",
+)
+
+
+def definitions(pdf: Path = PDF) -> list[dict]:
+    """ITR2024 names no indicator, weight or category; it prints the scores."""
+    text = " ".join(_lines(str(pdf), SCORES_PAGE))
+    for frag in _DEF_FRAGMENTS:
+        if frag not in text:
+            raise ValueError(f"definition fragment not on PDF p. {SCORES_PAGE}: {frag!r}")
+    extract_scores(pdf)  # Table 11.2 is there and complete
+    base = {"edition": EDITION, "score_year": SCORE_YEAR, "source_page": SCORES_PAGE}
+    return [
+        {**base, "indicator_no": "scores", "points": "",
+         "indicator_text_verbatim": "Table 11.2: TB score of States/UTs",
+         "note": "State scores printed: yes. 36 units, two decimals "
+                 "(data/extracted/itr2024_scores.csv)."},
+        {**base, "indicator_no": "not_stated", "points": 100,
+         "indicator_text_verbatim": " ".join(_DEF_FRAGMENTS),
+         "note": "The edition does not state the definition: no indicator, numerator, "
+                 "denominator, weight or state category is listed (chapter 11, Table 11.2 "
+                 "and Box 11.1, PDF 123-124; Table 16.3, PDF 175, names the score only as a "
+                 "key deliverable). Only the total of 100 is stated."},
+    ]
+
+
 # ---- writing ---------------------------------------------------------------
 
 def _fmt(v) -> str:
@@ -680,10 +720,9 @@ def write_all(pdf: Path, extracted: Path, choices_path: Path, check_path: Path) 
                [{"state": s, "cohort_year": 2022, **t33.rows[s], "source_file": SOURCE_FILE,
                  "pdf_page": t33.pages[s], "table_id": t33.spec.table_id}
                 for s in states.ALL])
-    _write_csv(choices_path,
-               ["score_year", "indicator", "component", "table_id", "pdf_pages",
-                "column_header_verbatim", "rule_from_plan", "note"],
-               source_choices(check, tables, table_11_1_udst_pct(pdf)))
+    annex.merge_source_choices(choices_path, SCORE_YEAR,
+                               source_choices(check, tables, table_11_1_udst_pct(pdf)))
+    annex.merge_definitions(extracted / "definitions.csv", EDITION, definitions(pdf))
     return {"tables": tables, "check": check, "totals": totals, "indicators": ind_rows}
 
 
