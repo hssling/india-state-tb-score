@@ -1,0 +1,1064 @@
+{
+  "admissible": [],
+  "available_indicators": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8
+  ],
+  "chosen": "R2",
+  "excluded": [
+    "Karnataka"
+  ],
+  "missing_indicators": [
+    7,
+    9
+  ],
+  "missing_points": 15,
+  "per_rule": {
+    "R1": {
+      "admissible": false,
+      "max_violation": 3.7663087609085206,
+      "n_compared": 35,
+      "n_in_band": 18,
+      "outside": {
+        "Andaman and Nicobar Islands": 18.77630876090852,
+        "Andhra Pradesh": 16.146999106481132,
+        "Bihar": 15.351065931431556,
+        "Chandigarh": 16.594348193612447,
+        "Dadra and Nagar Haveli and Daman and Diu": 17.669904812603775,
+        "Delhi": 16.4536761849527,
+        "Goa": 15.195072998142408,
+        "Gujarat": 17.66648910114492,
+        "Ladakh": 15.958323606115314,
+        "Maharashtra": 15.514656099471566,
+        "Meghalaya": 15.025227263555863,
+        "Odisha": 17.528103344557394,
+        "Puducherry": 17.657696908389227,
+        "Sikkim": 17.31758774196979,
+        "Telangana": 16.60552897477382,
+        "Tripura": 16.719384545885177,
+        "Uttar Pradesh": 15.260993434419234
+      }
+    },
+    "R2": {
+      "admissible": false,
+      "max_violation": 2.6599048126037754,
+      "n_compared": 35,
+      "n_in_band": 20,
+      "outside": {
+        "Andaman and Nicobar Islands": 17.19938568398544,
+        "Andhra Pradesh": 16.146999106481132,
+        "Bihar": 15.351065931431556,
+        "Chandigarh": 16.594348193612447,
+        "Dadra and Nagar Haveli and Daman and Diu": 17.669904812603775,
+        "Delhi": 16.4536761849527,
+        "Goa": 15.195072998142408,
+        "Gujarat": 17.022631958287775,
+        "Maharashtra": 15.514656099471566,
+        "Meghalaya": 15.025227263555863,
+        "Odisha": 17.528103344557394,
+        "Puducherry": 17.321111542535576,
+        "Sikkim": 17.31758774196979,
+        "Telangana": 16.60552897477382,
+        "Tripura": 15.556884545885183
+      }
+    },
+    "R3": {
+      "admissible": false,
+      "max_violation": 10.745804276992805,
+      "n_compared": 35,
+      "n_in_band": 1,
+      "outside": {
+        "Andaman and Nicobar Islands": 24.680423299235798,
+        "Andhra Pradesh": 23.828464011054365,
+        "Arunachal Pradesh": 19.674244017178594,
+        "Assam": 21.38381125733425,
+        "Bihar": 21.62678199156499,
+        "Chandigarh": 23.41517161381372,
+        "Chhattisgarh": 19.236199713352164,
+        "Dadra and Nagar Haveli and Daman and Diu": 25.755804276992805,
+        "Delhi": 23.306877566446325,
+        "Goa": 22.144869502962308,
+        "Gujarat": 25.30406147704187,
+        "Haryana": 19.76177177412532,
+        "Himachal Pradesh": 22.03191665247016,
+        "Jammu and Kashmir": 20.788777610642484,
+        "Jharkhand": 20.432761606821572,
+        "Kerala": 21.043764654616893,
+        "Ladakh": 19.239364654161847,
+        "Madhya Pradesh": 21.20961339673731,
+        "Maharashtra": 22.9866572344064,
+        "Manipur": 19.467907564143076,
+        "Meghalaya": 21.791468081361742,
+        "Mizoram": 21.027247852459908,
+        "Nagaland": 19.736809134094912,
+        "Odisha": 25.104676830688575,
+        "Puducherry": 24.503798523689625,
+        "Punjab": 19.226264576133723,
+        "Rajasthan": 21.845999333976664,
+        "Sikkim": 24.641196670513608,
+        "Tamil Nadu": 20.48368638973399,
+        "Telangana": 24.353061855424762,
+        "Tripura": 23.110365861381055,
+        "Uttar Pradesh": 20.134581474876782,
+        "Uttarakhand": 21.086341258976276,
+        "West Bengal": 20.116065989053574
+      }
+    },
+    "R4": {
+      "status": "not evaluable: no bands documented"
+    }
+  },
+  "per_state": {
+    "Andaman and Nicobar Islands": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 70.95369123909148,
+        "published": 89.73,
+        "residual": 18.77630876090852,
+        "violation": 3.7663087609085206
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 72.53061431601456,
+        "published": 89.73,
+        "residual": 17.19938568398544,
+        "violation": 2.1893856839854404
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 65.0495767007642,
+        "published": 89.73,
+        "residual": 24.680423299235798,
+        "violation": 9.670423299235798
+      }
+    },
+    "Andhra Pradesh": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 70.56300089351886,
+        "published": 86.71,
+        "residual": 16.146999106481132,
+        "violation": 1.1369991064811327
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 70.56300089351886,
+        "published": 86.71,
+        "residual": 16.146999106481132,
+        "violation": 1.1369991064811327
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 62.88153598894563,
+        "published": 86.71,
+        "residual": 23.828464011054365,
+        "violation": 8.818464011054365
+      }
+    },
+    "Arunachal Pradesh": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 63.73005385594004,
+        "published": 76.81,
+        "residual": 13.07994614405996,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 63.73005385594004,
+        "published": 76.81,
+        "residual": 13.07994614405996,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 57.13575598282141,
+        "published": 76.81,
+        "residual": 19.674244017178594,
+        "violation": 4.664244017178595
+      }
+    },
+    "Assam": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 67.27504256067975,
+        "published": 81.82,
+        "residual": 14.544957439320243,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 67.27504256067975,
+        "published": 81.82,
+        "residual": 14.544957439320243,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 60.43618874266574,
+        "published": 81.82,
+        "residual": 21.38381125733425,
+        "violation": 6.373811257334252
+      }
+    },
+    "Bihar": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 58.04893406856845,
+        "published": 73.4,
+        "residual": 15.351065931431556,
+        "violation": 0.3410659314315563
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 58.04893406856845,
+        "published": 73.4,
+        "residual": 15.351065931431556,
+        "violation": 0.3410659314315563
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 51.773218008435016,
+        "published": 73.4,
+        "residual": 21.62678199156499,
+        "violation": 6.61678199156499
+      }
+    },
+    "Chandigarh": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.48565180638755,
+        "published": 83.08,
+        "residual": 16.594348193612447,
+        "violation": 1.5843481936124473
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.48565180638755,
+        "published": 83.08,
+        "residual": 16.594348193612447,
+        "violation": 1.5843481936124473
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 59.66482838618628,
+        "published": 83.08,
+        "residual": 23.41517161381372,
+        "violation": 8.40517161381372
+      }
+    },
+    "Chhattisgarh": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 65.61148311352237,
+        "published": 78.13,
+        "residual": 12.518516886477627,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 65.61148311352237,
+        "published": 78.13,
+        "residual": 12.518516886477627,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 58.89380028664783,
+        "published": 78.13,
+        "residual": 19.236199713352164,
+        "violation": 4.226199713352164
+      }
+    },
+    "Dadra and Nagar Haveli and Daman and Diu": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 80.37009518739623,
+        "published": 98.04,
+        "residual": 17.669904812603775,
+        "violation": 2.6599048126037754
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 80.37009518739623,
+        "published": 98.04,
+        "residual": 17.669904812603775,
+        "violation": 2.6599048126037754
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 72.2841957230072,
+        "published": 98.04,
+        "residual": 25.755804276992805,
+        "violation": 10.745804276992805
+      }
+    },
+    "Delhi": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 65.5463238150473,
+        "published": 82.0,
+        "residual": 16.4536761849527,
+        "violation": 1.4436761849526984
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 65.5463238150473,
+        "published": 82.0,
+        "residual": 16.4536761849527,
+        "violation": 1.4436761849526984
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 58.693122433553675,
+        "published": 82.0,
+        "residual": 23.306877566446325,
+        "violation": 8.296877566446325
+      }
+    },
+    "Goa": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.18492700185759,
+        "published": 81.38,
+        "residual": 15.195072998142408,
+        "violation": 0.18507299814240774
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.18492700185759,
+        "published": 81.38,
+        "residual": 15.195072998142408,
+        "violation": 0.18507299814240774
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 59.23513049703769,
+        "published": 81.38,
+        "residual": 22.144869502962308,
+        "violation": 7.134869502962308
+      }
+    },
+    "Gujarat": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.24351089885508,
+        "published": 91.91,
+        "residual": 17.66648910114492,
+        "violation": 2.6564891011449188
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.88736804171222,
+        "published": 91.91,
+        "residual": 17.022631958287775,
+        "violation": 2.012631958287775
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.60593852295813,
+        "published": 91.91,
+        "residual": 25.30406147704187,
+        "violation": 10.29406147704187
+      }
+    },
+    "Haryana": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 73.19156810467548,
+        "published": 86.14,
+        "residual": 12.948431895324518,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 73.19156810467548,
+        "published": 86.14,
+        "residual": 12.948431895324518,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 66.37822822587468,
+        "published": 86.14,
+        "residual": 19.76177177412532,
+        "violation": 4.751771774125322
+      }
+    },
+    "Himachal Pradesh": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 80.13938162765712,
+        "published": 94.66,
+        "residual": 14.52061837234288,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 80.26542664373429,
+        "published": 94.66,
+        "residual": 14.39457335626571,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 72.62808334752984,
+        "published": 94.66,
+        "residual": 22.03191665247016,
+        "violation": 7.021916652470159
+      }
+    },
+    "Jammu and Kashmir": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 74.56761678695219,
+        "published": 87.82,
+        "residual": 13.252383213047807,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 74.56761678695219,
+        "published": 87.82,
+        "residual": 13.252383213047807,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.03122238935751,
+        "published": 87.82,
+        "residual": 20.788777610642484,
+        "violation": 5.778777610642484
+      }
+    },
+    "Jharkhand": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 67.8790800294185,
+        "published": 81.05,
+        "residual": 13.170919970581494,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 67.8790800294185,
+        "published": 81.05,
+        "residual": 13.170919970581494,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 60.617238393178425,
+        "published": 81.05,
+        "residual": 20.432761606821572,
+        "violation": 5.422761606821572
+      }
+    },
+    "Karnataka": {
+      "R1": {
+        "excluded": true,
+        "partial": null,
+        "published": 76.25,
+        "residual": null
+      },
+      "R2": {
+        "excluded": true,
+        "partial": null,
+        "published": 76.25,
+        "residual": null
+      },
+      "R3": {
+        "excluded": true,
+        "partial": null,
+        "published": 76.25,
+        "residual": null
+      }
+    },
+    "Kerala": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 73.60359822083834,
+        "published": 86.95,
+        "residual": 13.346401779161667,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 73.60359822083834,
+        "published": 86.95,
+        "residual": 13.346401779161667,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 65.90623534538311,
+        "published": 86.95,
+        "residual": 21.043764654616893,
+        "violation": 6.033764654616894
+      }
+    },
+    "Ladakh": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 78.86167639388468,
+        "published": 94.82,
+        "residual": 15.958323606115314,
+        "violation": 0.9483236061153146
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 84.46167639388469,
+        "published": 94.82,
+        "residual": 10.358323606115306,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 75.58063534583815,
+        "published": 94.82,
+        "residual": 19.239364654161847,
+        "violation": 4.229364654161847
+      }
+    },
+    "Lakshadweep": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 72.0408163265306,
+        "published": 81.5,
+        "residual": 9.459183673469397,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 79.5408163265306,
+        "published": 81.5,
+        "residual": 1.959183673469397,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 70.90275486534917,
+        "published": 81.5,
+        "residual": 10.597245134650834,
+        "violation": 0.0
+      }
+    },
+    "Madhya Pradesh": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 69.34674246148846,
+        "published": 83.19,
+        "residual": 13.843257538511537,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 69.34674246148846,
+        "published": 83.19,
+        "residual": 13.843257538511537,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 61.98038660326269,
+        "published": 83.19,
+        "residual": 21.20961339673731,
+        "violation": 6.199613396737311
+      }
+    },
+    "Maharashtra": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 69.83534390052843,
+        "published": 85.35,
+        "residual": 15.514656099471566,
+        "violation": 0.5046560994715659
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 69.83534390052843,
+        "published": 85.35,
+        "residual": 15.514656099471566,
+        "violation": 0.5046560994715659
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 62.36334276559359,
+        "published": 85.35,
+        "residual": 22.9866572344064,
+        "violation": 7.976657234406401
+      }
+    },
+    "Manipur": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 58.15267945685507,
+        "published": 71.61,
+        "residual": 13.457320543144931,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 58.15267945685507,
+        "published": 71.61,
+        "residual": 13.457320543144931,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 52.142092435856924,
+        "published": 71.61,
+        "residual": 19.467907564143076,
+        "violation": 4.457907564143076
+      }
+    },
+    "Meghalaya": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 69.52477273644413,
+        "published": 84.55,
+        "residual": 15.025227263555863,
+        "violation": 0.015227263555862791
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 69.52477273644413,
+        "published": 84.55,
+        "residual": 15.025227263555863,
+        "violation": 0.015227263555862791
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 62.758531918638255,
+        "published": 84.55,
+        "residual": 21.791468081361742,
+        "violation": 6.7814680813617425
+      }
+    },
+    "Mizoram": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 66.54402105386016,
+        "published": 81.45,
+        "residual": 14.90597894613984,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 66.54402105386016,
+        "published": 81.45,
+        "residual": 14.90597894613984,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 60.422752147540095,
+        "published": 81.45,
+        "residual": 21.027247852459908,
+        "violation": 6.017247852459908
+      }
+    },
+    "Nagaland": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 68.69290927392936,
+        "published": 81.31,
+        "residual": 12.617090726070643,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 68.69290927392936,
+        "published": 81.31,
+        "residual": 12.617090726070643,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 61.57319086590509,
+        "published": 81.31,
+        "residual": 19.736809134094912,
+        "violation": 4.726809134094912
+      }
+    },
+    "Odisha": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 75.92189665544261,
+        "published": 93.45,
+        "residual": 17.528103344557394,
+        "violation": 2.518103344557394
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 75.92189665544261,
+        "published": 93.45,
+        "residual": 17.528103344557394,
+        "violation": 2.518103344557394
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 68.34532316931143,
+        "published": 93.45,
+        "residual": 25.104676830688575,
+        "violation": 10.094676830688575
+      }
+    },
+    "Puducherry": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 73.90230309161078,
+        "published": 91.56,
+        "residual": 17.657696908389227,
+        "violation": 2.6476969083892268
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.23888845746443,
+        "published": 91.56,
+        "residual": 17.321111542535576,
+        "violation": 2.311111542535576
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.05620147631038,
+        "published": 91.56,
+        "residual": 24.503798523689625,
+        "violation": 9.493798523689625
+      }
+    },
+    "Punjab": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 60.011411052087865,
+        "published": 72.02,
+        "residual": 12.00858894791213,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 60.011411052087865,
+        "published": 72.02,
+        "residual": 12.00858894791213,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 52.79373542386627,
+        "published": 72.02,
+        "residual": 19.226264576133723,
+        "violation": 4.216264576133723
+      }
+    },
+    "Rajasthan": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 70.15721949531486,
+        "published": 84.35,
+        "residual": 14.192780504685132,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 70.15721949531486,
+        "published": 84.35,
+        "residual": 14.192780504685132,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 62.50400066602333,
+        "published": 84.35,
+        "residual": 21.845999333976664,
+        "violation": 6.835999333976664
+      }
+    },
+    "Sikkim": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.70241225803021,
+        "published": 92.02,
+        "residual": 17.31758774196979,
+        "violation": 2.3075877419697886
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.70241225803021,
+        "published": 92.02,
+        "residual": 17.31758774196979,
+        "violation": 2.3075877419697886
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.37880332948639,
+        "published": 92.02,
+        "residual": 24.641196670513608,
+        "violation": 9.631196670513608
+      }
+    },
+    "Tamil Nadu": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 71.85898005218094,
+        "published": 85.78,
+        "residual": 13.921019947819062,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 71.85898005218094,
+        "published": 85.78,
+        "residual": 13.921019947819062,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 65.29631361026601,
+        "published": 85.78,
+        "residual": 20.48368638973399,
+        "violation": 5.47368638973399
+      }
+    },
+    "Telangana": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.14447102522618,
+        "published": 83.75,
+        "residual": 16.60552897477382,
+        "violation": 1.5955289747738188
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.14447102522618,
+        "published": 83.75,
+        "residual": 16.60552897477382,
+        "violation": 1.5955289747738188
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 59.39693814457524,
+        "published": 83.75,
+        "residual": 24.353061855424762,
+        "violation": 9.343061855424763
+      }
+    },
+    "Tripura": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 74.70061545411482,
+        "published": 91.42,
+        "residual": 16.719384545885177,
+        "violation": 1.709384545885177
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 75.86311545411482,
+        "published": 91.42,
+        "residual": 15.556884545885183,
+        "violation": 0.5468845458851828
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 68.30963413861895,
+        "published": 91.42,
+        "residual": 23.110365861381055,
+        "violation": 8.100365861381055
+      }
+    },
+    "Uttar Pradesh": {
+      "R1": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 72.13900656558077,
+        "published": 87.4,
+        "residual": 15.260993434419234,
+        "violation": 0.25099343441923416
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 75.15253383830803,
+        "published": 87.4,
+        "residual": 12.247466161691975,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 67.26541852512322,
+        "published": 87.4,
+        "residual": 20.134581474876782,
+        "violation": 5.124581474876782
+      }
+    },
+    "Uttarakhand": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 70.00384652210795,
+        "published": 83.25,
+        "residual": 13.24615347789205,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 70.00384652210795,
+        "published": 83.25,
+        "residual": 13.24615347789205,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 62.163658741023724,
+        "published": 83.25,
+        "residual": 21.086341258976276,
+        "violation": 6.076341258976276
+      }
+    },
+    "West Bengal": {
+      "R1": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 69.50405686028064,
+        "published": 83.29,
+        "residual": 13.785943139719365,
+        "violation": 0.0
+      },
+      "R2": {
+        "excluded": false,
+        "in_band": true,
+        "partial": 69.50405686028064,
+        "published": 83.29,
+        "residual": 13.785943139719365,
+        "violation": 0.0
+      },
+      "R3": {
+        "excluded": false,
+        "in_band": false,
+        "partial": 63.17393401094643,
+        "published": 83.29,
+        "residual": 20.116065989053574,
+        "violation": 5.106065989053574
+      }
+    }
+  },
+  "ranking": [
+    "R2",
+    "R1",
+    "R3"
+  ],
+  "rules_for_q2q4": [
+    "R2"
+  ],
+  "score_kind": "rescaled partial",
+  "score_year": 2023,
+  "sensitivity_rules": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "verdict": "not reproducible"
+}

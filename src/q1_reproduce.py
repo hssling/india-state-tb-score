@@ -65,6 +65,8 @@ def select_rule(published, partial_by_rule, missing_points, missing_indicators=N
         if published.get(s) is None
         or any(partial_by_rule[r].get(s) is None for r in evaluated))
     compared = sorted(states - set(excluded))
+    if not compared:
+        raise ValueError("no computable state to compare")
 
     per_rule, per_state = {}, {s: {} for s in sorted(states)}
     for r, v in partial_by_rule.items():

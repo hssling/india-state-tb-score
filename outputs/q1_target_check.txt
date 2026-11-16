@@ -1,0 +1,8 @@
+Plan §5.3 notification-target check, score year 2023 (India TB Report 2024)
+Annexure 1.2 (PDF pp. 187, 188), column "Target of TB patients expected to be notified: Total", INDIA row: 2762832
+Sum of the 36 State/UT rows of that column: 2762832
+Table 11.1 (PDF p. 123), annual target for TB case notification (Total): 2761682
+Difference (expected - target): 1150
+Relative difference: 0.041641% of the target
+Tolerance: |difference| <= 0.1% of the target = 2761.682
+Verdict: AGREE

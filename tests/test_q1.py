@@ -139,6 +139,15 @@ def test_excluded_states_listed():
     assert res["admissible"] == ["R1", "R2"]
 
 
+def test_empty_comparison_raises():
+    pub = {"A": 80.0, "K": None}
+    parts = {"R1": {"A": None, "K": 40.0}, "R2": {"A": None, "K": 40.0}}
+    with pytest.raises(ValueError, match="no computable state to compare"):
+        select_rule(pub, parts, 15, missing_indicators=[7, 9])
+    with pytest.raises(ValueError, match="no computable state to compare"):
+        select_rule(pub, parts, 0)
+
+
 def test_missing_indicators_must_match_missing_points():
     with pytest.raises(ValueError):
         select_rule({"A": 1.0}, {"R1": {"A": 1.0}}, 15, missing_indicators=[7])
