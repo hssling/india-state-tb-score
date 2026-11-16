@@ -99,3 +99,30 @@ def test_wrapped_names_rejoined():
 def test_upright_page_rows():
     lines = pdftext.page_lines(ITR2024, 199)
     assert "Andhra Pradesh 62795 (99%) 26412 (100%) 89207 (99%)" in lines
+
+
+def test_parse_count_accepts_integral_floats():
+    assert cells.parse_count("63.0") == 63
+    assert cells.parse_count("1,234.0") == 1234
+    assert cells.parse_count("311961.00") == 311961
+    assert cells.parse_count("4607") == 4607
+    assert cells.parse_count("1,23,456") == 123456
+
+
+@pytest.mark.parametrize("bad", ["63.5", "0.3", "", "-", "NA", "abc", "1.2.0"])
+def test_parse_count_rejects_non_integral_and_blank(bad):
+    with pytest.raises(ValueError):
+        cells.parse_count(bad)
+
+
+def test_parse_int_stays_strict_on_floats():
+    with pytest.raises(ValueError):
+        cells.parse_int("63.0")
+
+
+def test_leading_state_accepts_spreadsheet_error_cells():
+    # CTD prints spreadsheet error values (#N/A, #DIV/0!) in blank cells.
+    assert states.leading_state("Lakshadweep #N/A #N/A #N/A") == (
+        "Lakshadweep", "#N/A #N/A #N/A")
+    assert states.leading_state("Arunachal Pradesh 139 (89%) #DIV/0! 139 (89%)") == (
+        "Arunachal Pradesh", "139 (89%) #DIV/0! 139 (89%)")

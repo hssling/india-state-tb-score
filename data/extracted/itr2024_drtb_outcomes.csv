@@ -1,0 +1,37 @@
+state,cohort_year,cohort_n,cured,completed,success,source_file,pdf_page,table_id
+Andaman and Nicobar Islands,2021,31,8,19,27,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Andhra Pradesh,2021,1089,552,316,868,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Arunachal Pradesh,2021,110,29,52,81,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Assam,2021,389,101,179,280,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Bihar,2021,2239,410,1160,1570,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Chandigarh,2021,56,19,24,43,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Chhattisgarh,2021,432,166,156,322,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Dadra and Nagar Haveli and Daman and Diu,2021,19,9,6,15,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Delhi,2021,1405,371,602,973,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Goa,2021,31,13,9,22,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Gujarat,2021,1473,723,387,1110,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Haryana,2021,1439,497,635,1132,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Himachal Pradesh,2021,181,77,73,150,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Jammu and Kashmir,2021,150,98,30,128,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Jharkhand,2021,853,203,391,594,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Karnataka,2021,848,384,210,594,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Kerala,2021,235,118,67,185,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Ladakh,2021,6,4,2,6,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Lakshadweep,2021,,,,,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Madhya Pradesh,2021,1569,364,753,1117,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Maharashtra,2021,6580,2038,2996,5034,data_raw/india_tb_report/ITR2024.pdf,273,Annexure 4.13
+Manipur,2021,48,23,12,35,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Meghalaya,2021,134,44,60,104,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Mizoram,2021,98,44,38,82,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Nagaland,2021,86,25,33,58,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Odisha,2021,415,185,162,347,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Puducherry,2021,16,8,5,13,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Punjab,2021,585,184,240,424,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Rajasthan,2021,1825,588,768,1356,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Sikkim,2021,166,54,74,128,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Tamil Nadu,2021,983,416,268,684,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Telangana,2021,955,525,223,748,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Tripura,2021,21,9,5,14,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Uttar Pradesh,2021,7271,1616,3584,5200,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+Uttarakhand,2021,483,125,244,369,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13
+West Bengal,2021,1334,318,662,980,data_raw/india_tb_report/ITR2024.pdf,274,Annexure 4.13

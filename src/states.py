@@ -65,7 +65,9 @@ def require_all(names: Iterable[str], year: int) -> None:
             f"year {year}: missing units {missing}; extra units {extra}")
 
 
-_NUMLIKE = re.compile(r"^(?:[\d*(]|NA$|-$)", re.I)
+# "#" starts a spreadsheet error value (#N/A, #DIV/0!) that CTD prints in
+# blank cells.
+_NUMLIKE = re.compile(r"^(?:[\d*(#]|NA$|-$)", re.I)
 
 
 def leading_state(line: str) -> tuple[str, str] | None:

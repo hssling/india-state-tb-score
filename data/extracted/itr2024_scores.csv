@@ -1,0 +1,37 @@
+score_year,state,score,source_file,pdf_page,table_id
+2023,Andaman and Nicobar Islands,89.73,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Andhra Pradesh,86.71,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Arunachal Pradesh,76.81,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Assam,81.82,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Bihar,73.40,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Chandigarh,83.08,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Chhattisgarh,78.13,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Dadra and Nagar Haveli and Daman and Diu,98.04,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Delhi,82.00,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Goa,81.38,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Gujarat,91.91,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Haryana,86.14,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Himachal Pradesh,94.66,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Jammu and Kashmir,87.82,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Jharkhand,81.05,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Karnataka,76.25,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Kerala,86.95,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Ladakh,94.82,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Lakshadweep,81.50,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Madhya Pradesh,83.19,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Maharashtra,85.35,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Manipur,71.61,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Meghalaya,84.55,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Mizoram,81.45,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Nagaland,81.31,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Odisha,93.45,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Puducherry,91.56,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Punjab,72.02,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Rajasthan,84.35,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Sikkim,92.02,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Tamil Nadu,85.78,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Telangana,83.75,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Tripura,91.42,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Uttar Pradesh,87.40,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,Uttarakhand,83.25,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
+2023,West Bengal,83.29,data_raw/india_tb_report/ITR2024.pdf,123,Table 11.2
