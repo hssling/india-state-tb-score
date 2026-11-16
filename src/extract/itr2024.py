@@ -7,6 +7,10 @@ against the national row the report prints; a mismatch stops the run.
 Run: python -I src/extract/itr2024.py
 Writes data/extracted/itr2024_*.csv, data/source_choices.csv and
 outputs/q1_target_check.txt. No score is computed here.
+
+In itr2024_indicators.csv, pdf_page and table_id are "numerator;denominator"
+composites (e.g. "199;191", "Annexure 2.1;Annexure 1.4"), written in that
+form even when both parts are equal; downstream code must split on ";".
 """
 from __future__ import annotations
 
@@ -380,6 +384,18 @@ def table_11_1_target(pdf: Path = PDF) -> int:
     return cells.parse_int(hits[0].group(1))
 
 
+_KPI4 = re.compile(
+    r"^4 Proportion of notified TB patients offered Rifampicin sensitivity .* (\d+)%$")
+
+
+def table_11_1_udst_pct(pdf: Path = PDF) -> int:
+    """Table 11.1 KPI 4: national % of notified offered rifampicin testing."""
+    hits = [m for m in map(_KPI4.match, _lines(str(pdf), SCORES_PAGE)) if m]
+    if len(hits) != 1:
+        raise ValueError("Table 11.1 KPI 4 not found once")
+    return int(hits[0].group(1))
+
+
 def target_verdict(expected: int, target: int) -> str:
     return "AGREE" if abs(expected - target) <= TOLERANCE * target else "DISAGREE"
 
@@ -504,15 +520,40 @@ def _pages(key: str) -> str:
     return ";".join(map(str, SPECS[key].pages))
 
 
-def source_choices(check: dict) -> list[dict]:
+def _ratio(t: Table, s: str, col: str, den: Table, dcol: str) -> str:
+    n, d = t.rows[s][col], den.rows[s][dcol]
+    return f"{s} {n:,}/{d:,} = {n / d:.0%}"
+
+
+def source_choices(check: dict, tables: dict[str, Table], udst_kpi_pct: int) -> list[dict]:
     v = check["verdict"]
+    a14, a21, a47, a9 = tables["a1_4"], tables["a2_1"], tables["a4_7"], tables["a9"]
+    rif_n, net_n = a47.national["rif_known_total"], a14.national["net_notified_total"]
+    rif_share = rif_n / net_n
+    udst_note = (
+        f" DEFINITIONAL MISMATCH (not pre-specified in §5.5): the chosen numerator gives "
+        f"{rif_n:,} / {net_n:,} = {rif_share:.1%} nationally, while Table 11.1 (PDF "
+        f"p.{SCORES_PAGE}, KPI 4) prints {udst_kpi_pct}% of notified patients 'offered "
+        f"rifampicin sensitivity testing'. CTD's quantity is therefore about "
+        f"{round((udst_kpi_pct / 100 / rif_share - 1) * 100)}% larger than the state-wise "
+        f"quantity published in the annexures.")
+    pb = a9.rows["Punjab"]
+    punjab_note = (
+        f" Source anomaly: Punjab prints {pb['paid_once']:,} paid of {pb['eligible']:,} "
+        f"eligible ({pb['paid_once'] / pb['eligible']:.0%}), far below other states. "
+        f"Extracted as printed; not corrected.")
+    evidence = ", ".join(
+        _ratio(a21, s, "hiv_known_total", a14, "net_notified_total")
+        for s in ("Andaman and Nicobar Islands", "Delhi", "Puducherry"))
     ch = lambda key, col: (SPECS[key].table_id, _pages(key), SPECS[key].columns[col].header)  # noqa: E731
     net = ch("a1_4", "net_notified_total")
     net_note = ("Net notified (plan §5.4 item 7): annexure 1.4 'Net TB patients* notified "
                 "(Based on current PHI)' Total, the only column the report labels 'net'; the "
                 "same column feeds indicators 2, 3 and 4. Not used: annexure 1.2 notified "
                 "(diagnosing PHI, gross) and annexure 4.7 'Total TB cases notified (2023)' "
-                "(case concept, current facility), which the report does not call net.")
+                "(case concept, current facility), which the report does not call net. "
+                f"Evidence: annexure 2.1's printed percentages are computed on annexure 1.4 "
+                f"net notified (e.g. {evidence}).")
     rows = [
         (1, "numerator", *ch("a1_2", "notified_total"), "§5.1 row 1",
          "Total TB patients notified in 2023 (by diagnosing PHI)."
@@ -534,7 +575,7 @@ def source_choices(check: dict) -> list[dict]:
          "printed for bacteriologically confirmed patients. No state-wise table prints "
          "'UDST done' among all notified (annexure 1.3 has no testing columns; annexures "
          "4.2-4.5 count tests or samples, not patients); Table 11.1's "
-         "'offered rifampicin sensitivity testing' is national only."),
+         "'offered rifampicin sensitivity testing' is national only." + udst_note),
         (3, "denominator", *net, "§5.1 row 3; §5.2 last item; §5.4 item 7",
          "Stored as the net notified count. The 0.7 benchmark of §5.2 is applied at "
          "scoring time (denominator = 0.7 x stored value), not here. " + net_note),
@@ -549,7 +590,8 @@ def source_choices(check: dict) -> list[dict]:
          "data/extracted/itr2024_tsr_cohort.csv."),
         (5, "numerator", *ch("a9", "paid_once"), "§5.1 row 5; §5.5",
          "Indicator 5 quantity (§5.5): 'paid at least once' is printed and is used, "
-         "following the definition. 'All benefits paid' (Table 11.1 KPI) is not printed by state."),
+         "following the definition. 'All benefits paid' (Table 11.1 KPI) is not printed by state."
+         + punjab_note),
         (5, "denominator", *ch("a9", "eligible"), "§5.1 row 5",
          "Total eligible TB patients. Karnataka printed '-' (blank): not computable (§5.2); "
          "the INDIA row equals the sum of the other 35 units."),
@@ -561,9 +603,13 @@ def source_choices(check: dict) -> list[dict]:
          "(printed footnote). Identical, state by state, to annexure 4.8 first column "
          f"(PDF {_pages('a4_8')}), checked in code."),
         (7, "numerator", "not located", "", "", "§5.1 row 7; §5.4 items 4-5",
-         "Missing. No state-wise expenditure-against-ROP table in ITR2024 (annexure list "
-         "PDF 182-184; list of tables PDF 25; Table 16.1 PDF 174 is national). Controller "
-         "ruling R4: no web search or download in this task."),
+         "Not located in ITR2024 (no state-wise expenditure-against-ROP table in the "
+         "annexure list or list of tables). One search of official public sources on 17 Nov "
+         "2026 found no state-wise 2023 table: NHM ROP and PIP pages; one state's NHM site "
+         "(Maharashtra, to Dec 2023 only); parliamentary replies covering other schemes or "
+         "national allocations only; the Rajya Sabha HFW committee report on TB was "
+         "unavailable (dead link). Search closed by the author on 17 Nov 2026 under plan "
+         "§5.4 item 5; indicator 7 is treated as missing."),
         (7, "denominator", "not located", "", "", "§5.1 row 7; §5.4 items 4-5",
          "Missing; see numerator."),
         (8, "numerator", *ch("a7_2", "initiated_tpt"), "§5.1 row 8; §5.5",
@@ -637,7 +683,7 @@ def write_all(pdf: Path, extracted: Path, choices_path: Path, check_path: Path) 
     _write_csv(choices_path,
                ["score_year", "indicator", "component", "table_id", "pdf_pages",
                 "column_header_verbatim", "rule_from_plan", "note"],
-               source_choices(check))
+               source_choices(check, tables, table_11_1_udst_pct(pdf)))
     return {"tables": tables, "check": check, "totals": totals, "indicators": ind_rows}
 
 
