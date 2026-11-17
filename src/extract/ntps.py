@@ -332,7 +332,10 @@ def _extract(pdf: str) -> dict:
     not_covered.append({
         "state": "Ladakh", "reason": "not listed in survey units", "source_file": SOURCE_FILE,
         "pdf_page": "",
-        "note": "No page of the report names Ladakh. 'Jammu & Kashmir' (HP,UK,JK, PDF p. 10) "
+        "note": "No page with a text layer names Ladakh. 17 of 212 pages have no text layer "
+                "(PDF pp. 1, 2, 16, 18, 22, 42, 50, 54, 56, 114, 116, 120, 122, 124, 128, 211, "
+                "212). The cluster list (annexure 9.1) has Jammu and Kashmir clusters only in "
+                "Anantnag and Jammu. 'Jammu & Kashmir' (HP,UK,JK, PDF p. 10) "
                 "is not taken to include it: membership is not inferred."})
     for row in not_covered:
         if row["state"] in seen:
@@ -378,8 +381,15 @@ def source_choices(res: dict) -> list[dict]:
                         "report calls the latter its best estimate ('" + BEST_QUOTES[0][1]
                         + "', PDF p. 90; '" + BEST_QUOTES[1][1] + "', PDF p. 93) and plots it "
                         "in Figure 20 (PDF p. 94). Checked equal to Table 21's first column "
-                        "(PDF p. 95) and annexure 9.2 Model 6 (PDF pp. 143-144). The crude "
-                        "column is not used."},
+                        "(PDF p. 95) and annexure 9.2 Model 6 (PDF pp. 143-144). This column "
+                        "is the survey's primary-outcome estimator: primary objective, PDF "
+                        "p. 20 ('point prevalence of microbiologically confirmed pulmonary TB "
+                        "among persons aged ≥15 years individually for 20 states / state "
+                        "groups'); estimation method for the primary outcome, PDF pp. 47–48 "
+                        "(svy with inverse probability weighting and post-stratification, "
+                        "logistic regression with robust standard errors, multiple imputation "
+                        "with Rubin's rules). The crude column is an unweighted exact-binomial "
+                        "figure and is not used."},
         base | {"component": "membership", "table_id": "List of abbreviations; annexure 9.2",
                 "pdf_pages": "10;11;143;144", "column_header_verbatim": "State Group",
                 "rule_from_plan": "§9.1 Aggregation; membership read from the report, "
