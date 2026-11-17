@@ -27,6 +27,7 @@ CHECKS = [
     ("check_plan_order", PY + ["verification/check_plan_order.py"]),
     ("check_deviations", PY + ["verification/check_deviations.py"]),
     ("check_manuscript_numbers", PY + ["verification/check_manuscript_numbers.py"]),
+    ("check_docx_tie", PY + ["verification/check_docx_tie.py"]),
 ]
 
 

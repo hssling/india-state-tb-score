@@ -48,6 +48,7 @@ import math
 import statistics
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -516,7 +517,7 @@ ABSTRACT_REQUIRED = [
 
 def want(root: Path = ROOT, required: list[str] = REQUIRED) -> dict[str, str]:
     """label -> expected string that the manuscript must contain (the REQUIRED labels)."""
-    cat = catalogue(root)
+    cat = catalogue_cached(root)
     out: dict[str, str] = {}
     for pat in required:
         hits = fnmatch.filter(cat, pat)
@@ -549,6 +550,8 @@ ALLOW = [
     r"\bClaude Opus \d+(?:\.\d+)?\b",  # the AI model's name (Methods disclosure)
 ]
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+# a number token of the skeleton: thousands separators kept, list commas not ("4,5" is two)
+SKEL_NUMBER = re.compile(r"\d+(?:,\d{3}(?!\d))*(?:\.\d+)?")
 
 
 def _token(s: str) -> re.Pattern:
@@ -635,7 +638,235 @@ def tables_not_inserted(root: Path, text: str) -> str | None:
     return None
 
 
-def main(root: Path = ROOT) -> int:
+# --------------------------------------------------------------------------------------
+# Ruling R34: whole-phrase requirements per section, label and year checks, and a golden
+# skeleton of every number token
+# --------------------------------------------------------------------------------------
+# Each phrase is a literal with {label} placeholders filled from catalogue(); it must occur
+# whole inside its own section (so "0.82" -> "0.83" or "n = 19" -> "n = 34" fails: the
+# label's words plus the value are required, not the value alone). Every number-bearing
+# phrase of the Abstract and the Results is listed.
+SECTION_REQUIRED: dict[str, list[str]] = {
+    "Abstract": [
+        "India TB Reports 2023 and 2024",
+        "National TB Prevalence Survey 2019–21",
+        "the 2023 scores were rebuilt",
+        "Two indicators ({q1.missing_points})",
+        "(closest: {q1.R2.in_band} states; largest excess {q1.R2.max_violation} points)",
+        "ρ with the published ranking {q2.R2.1_weights.c63.spearman_range} over the "
+        "{methods.central_draws}",
+        "ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} units",
+        "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise",
+    ],
+    "Methods": [
+        "{methods.total_points}", "{methods.udst}", "{methods.udst_se}", "{methods.r2_cap}",
+        "{methods.tolerance}", "{methods.draws}", "{methods.c}", "{methods.alpha}",
+        "{methods.z}", "{methods.ci_level}", "{methods.fieller}", "{methods.sat_share}",
+        "{methods.sat_level}", "{methods.registration}", "{methods.n_deviations}",
+        "{methods.python}", "{methods.pdfplumber}", "by {pop.diff}", "score year 2020",
+    ],
+    "Results": [
+        "worth {q1.missing_points}, are not published by state (Table I)",
+        "Of the {q1.n_published}, Karnataka",
+        "its indicator 5 denominator is blank",
+        "the residual lay in the band for {q1.R2.in_band} states",
+        "(Figure 1)",
+        "(R4 could not be tested)",
+        "R2 was carried into Q2–Q4",
+        "ρ with the published ranking was {q2.R2.1_weights.c63.spearman_range} over the "
+        "{methods.central_draws} (Table III)",
+        "Leaving out indicator 1 or indicator 3",
+        "leaving out indicator 4",
+        "Web tables 1 and 2", "Web table 3",
+        "The survey prints {q3.units_printed}, from {q3.clusters}",
+        "{q3.units_analysed} representing {q3.states_covered} were analysed",
+        "was ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} (Table IV, Figure 3)",
+        "{ctx.died.national} patients of the 2022 cohort died",
+        "and {ctx.ltfu.national} were lost to follow-up",
+        "across the {ctx.n_states}, death had a {ctx.died.states}",
+        "loss to follow-up a {ctx.ltfu.states}",
+        "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise "
+        "(Table IV, Figure 4)",
+        "its 2023 SE could not be computed",
+        "Web table 4",
+    ],
+    "Discussion": [
+        "{q4.se0_counts}", "{q4.se0_cause}", "{q4.ind4_error.counts}", "{q4.ind4_error.a}",
+        "{q4.R2.no1.rho_ci}",
+        "and {q4.R1.no1.rho_context}", "{ind3.annexure_share} against {ind3.table11_1_share} of notified patients",
+        "Q3 rests on {q3.units_analysed}", "the survey (2019–21)",
+        "not from the {q4.R2.all.rho_n} association",
+    ],
+}
+SECTION_ORDER = ("Abstract", "Methods", "Results", "Discussion", "Legends to Figures")
+SKELETON = "number_skeleton.json"
+ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
+# Year phrases are pinned in SECTION_REQUIRED (report years 2023 and 2024, change years
+# 2022 and 2023, survey span 2019-21). Every other year in a checked section must be one of:
+YEARS_ALLOWED = {"2019", "2021", "2022", "2023", "2024"}
+
+
+@lru_cache(maxsize=4)
+def catalogue_cached(root: Path) -> dict[str, str]:
+    return catalogue(root)
+
+
+def fill(template: str, cat: dict[str, str]) -> str:
+    """Substitute {label} placeholders with the catalogue strings."""
+    return re.sub(r"\{([^}]+)\}", lambda m: cat[m.group(1)], template)
+
+
+def squash(s: str) -> str:
+    return re.sub(r"\s+", " ", s)
+
+
+def phrase_problems(text: str, root: Path) -> list[str]:
+    """Required whole phrases missing from their own section."""
+    cat = catalogue_cached(root)
+    out = []
+    for sec, phrases in SECTION_REQUIRED.items():
+        body = squash(section(text, sec))
+        for ph in phrases:
+            want_s = squash(fill(ph, cat))
+            if not _token(want_s).search(body):
+                out.append(f"MISSING in {sec}: {want_s!r}")
+    return out
+
+
+ROMAN_LIST = re.compile(r"\bTables? ([IVX]+\b(?:(?:–| and |, )[IVX]+\b)*)")
+
+
+def skel_spans(s: str) -> list[tuple[int, int, str]]:
+    """(start, end, token) of the skeleton tokens of `s`, in order: every number, and the
+    Roman numerals of Table citations (Tables are numbered I-IV, so a swap of one cited
+    table for another is a change of token like any other)."""
+    out = [(m.start(), m.end(), m.group()) for m in SKEL_NUMBER.finditer(s)]
+    for m in ROMAN_LIST.finditer(s):
+        out += [(m.start(1) + r.start(), m.start(1) + r.end(), r.group())
+                for r in re.finditer(r"[IVX]+", m.group(1))]
+    return sorted(out)
+
+
+def skeleton(text: str) -> dict[str, list[str]]:
+    """The ordered tokens of each checked section, nothing masked."""
+    return {sec: [t for _, _, t in skel_spans(section(text, sec))] for sec in SECTION_ORDER}
+
+
+def skeleton_problems(text: str, root: Path) -> list[str]:
+    path = root / "manuscript" / SKELETON
+    if not path.exists():
+        return [f"{SKELETON} missing: after review run "
+                "python -I verification/check_manuscript_numbers.py --regenerate"]
+    gold = json.loads(path.read_text(encoding="utf-8"))
+    now = skeleton(text)
+    out = []
+    for sec in SECTION_ORDER:
+        a, b = gold.get(sec, []), now[sec]
+        if a != b:
+            k = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+            now_tok = b[k] if k < len(b) else "(none)"
+            gold_tok = a[k] if k < len(a) else "(none)"
+            out.append(f"SKELETON {sec}: token {k + 1} is {now_tok!r}, golden has {gold_tok!r} "
+                       f"({len(b)} tokens now, {len(a)} in the golden file)")
+    return out
+
+
+def _nums(group: str, roman: bool) -> list[int]:
+    """'I', 'I and II', 'I–IV' or '1, 2' to integers (a dash is an inclusive range)."""
+    toks = re.findall(r"[IVX]+|\d+", group)
+    vals = [ROMAN.get(t, 0) if roman else int(t) for t in toks]
+    if "–" in group and len(vals) == 2:
+        return list(range(vals[0], vals[1] + 1))
+    return vals
+
+
+def citations(text: str) -> dict[str, list[int]]:
+    """Exhibit citations in reading order, by type, from the prose (Abstract to Legends)."""
+    t = prose(text)
+    t = re.sub(r"(?m)^\*\*(?:Figure|Table|Web table) [IVX\d]+\.\*\*", " ", t)  # legend labels
+    t = re.sub(r"(?m)^#+.*$", " ", t)
+    found: dict[str, list[int]] = {"Table": [], "Figure": [], "Web table": []}
+    arabic = r"\d+(?![\d.]\d)"  # "Table 11.2" is a table of the source report, not ours
+    for word, kind, item in (("Web tables?", "Web table", arabic),
+                             ("Tables?", "Table", r"[IVX]+\b"), ("Figures?", "Figure", arabic)):
+        pat = re.compile(rf"(?<!Web )\b{word} ({item}(?:(?:–| and |, ){item})*)")
+        for m in pat.finditer(t):
+            found[kind] += _nums(m.group(1), kind == "Table")
+    return found
+
+
+def exhibit_problems(text: str) -> list[str]:
+    """Cited exhibits exist, are first cited in ascending order, and each is cited."""
+    out = []
+    have = {
+        "Table": {ROMAN[r] for r in re.findall(r"(?m)^\*\*Table ([IVX]+)\.", text) if r in ROMAN},
+        "Figure": {int(n) for n in re.findall(r"(?m)^\*\*Figure (\d+)\.\*\*", text)},
+        "Web table": {int(n) for n in re.findall(r"(?m)^\*\*Web table (\d+)\.", text)},
+    }
+    for kind, nums in citations(text).items():
+        if have[kind] != {1, 2, 3, 4}:
+            out.append(f"EXHIBITS: {kind} captions found {sorted(have[kind])}, expected 1-4")
+        bad = sorted({n for n in nums if n not in have[kind]})
+        if bad:
+            out.append(f"EXHIBITS: {kind} {bad} cited but not present")
+        first = list(dict.fromkeys(nums))
+        if first != sorted(first):
+            out.append(f"EXHIBITS: first citations of {kind}s out of order: {first}")
+        never = sorted(have[kind] - set(nums))
+        if never:
+            out.append(f"EXHIBITS: {kind} {never} never cited in the text (IJMR L586-587)")
+    return out
+
+
+def label_problems(text: str, root: Path) -> list[str]:
+    """Q in 1-4, R in 1-4 (R4 is the threshold-band rule, stated untestable), indicators
+    in 1-9, and years from the data-tied set."""
+    t = re.sub(r"(?m)^#+.*$", " ", prose(text))
+    out = []
+    for q in re.findall(r"\bQ(\d+)", t):
+        if not 1 <= int(q) <= 4:
+            out.append(f"LABEL: Q{q} outside Q1-Q4")
+    for r in re.findall(r"\bR(\d+)\b", t):
+        if not 1 <= int(r) <= 4:
+            out.append(f"LABEL: R{r} outside R1-R4")
+    for m in re.finditer(r"\b[Ii]ndicators? (\d+(?:(?:, and |, | and |–)\d+)*)", t):
+        for n in re.findall(r"\d+", m.group(1)):
+            if not 1 <= int(n) <= 9:
+                out.append(f"LABEL: indicator {n} outside 1-9")
+    reg_years = set(re.findall(r"\b20\d\d\b", catalogue_cached(root)["methods.registration"]))
+    for sec in SECTION_ORDER:
+        body = section(text, sec).replace("2019–21", " ").replace("score year 2020", " ")  # pinned above
+        for y in re.findall(r"(?<![\d.,])(20\d\d)(?!\d)", body):
+            if y not in YEARS_ALLOWED | reg_years:
+                out.append(f"LABEL: year {y} in {sec} is not tied to the data")
+    return out
+
+
+def problems(root: Path, text: str) -> list[str]:
+    """Every problem found in `text` taken as the manuscript (empty if clean)."""
+    out = []
+    for label, v in missing(text, want(root)):
+        out.append(f"MISSING {label}: {v!r}")
+    abstract = section(text, "Abstract")
+    if not abstract.strip():
+        out.append("MISSING the abstract (no '## Abstract' section)")
+    else:
+        for label, v in missing(abstract, want(root, ABSTRACT_REQUIRED)):
+            out.append(f"MISSING in the abstract {label}: {v!r}")
+    for n in unaccounted(text, catalogue_cached(root)):
+        out.append(f"UNACCOUNTED number in prose: {n!r}")
+    out += phrase_problems(text, root)
+    out += exhibit_problems(text)
+    out += label_problems(text, root)
+    out += skeleton_problems(text, root)
+    for msg in (stale_tables(root), tables_not_inserted(root, text)):
+        if msg:
+            out.append(msg)
+    return out
+
+
+def main(root: Path = ROOT, argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
     if not (root / "manuscript").is_dir():
         print(SKIP_DIR)
         return 0
@@ -644,29 +875,19 @@ def main(root: Path = ROOT) -> int:
         print(SKIP_MS)
         return 0
     text = ms.read_text(encoding="utf-8")
-    wants = want(root)
-    abs_wants = want(root, ABSTRACT_REQUIRED)
-    bad = 0
-    for label, v in missing(text, wants):
-        print(f"MISSING {label}: {v!r}")
-        bad += 1
-    abstract = section(text, "Abstract")
-    if not abstract.strip():
-        print("MISSING the abstract (no '## Abstract' section)")
-        bad += 1
-    else:
-        for label, v in missing(abstract, abs_wants):
-            print(f"MISSING in the abstract {label}: {v!r}")
-            bad += 1
-    for n in unaccounted(text, catalogue(root)):
-        print(f"UNACCOUNTED number in prose: {n!r}")
-        bad += 1
-    for msg in (stale_tables(root), tables_not_inserted(root, text)):
-        if msg:
-            print(msg)
-            bad += 1
-    print(f"{len(wants)} expected strings ({len(abs_wants)} in the abstract); {bad} problem(s)")
-    return 1 if bad else 0
+    if "--regenerate" in argv:
+        gold = skeleton(text)
+        (root / "manuscript" / SKELETON).write_text(
+            json.dumps(gold, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"wrote manuscript/{SKELETON}: " + ", ".join(f"{k} {len(v)}" for k, v in gold.items()))
+        return 0
+    found = problems(root, text)
+    for ln in found:
+        print(ln)
+    n_ph = sum(len(v) for v in SECTION_REQUIRED.values())
+    print(f"{len(want(root))} expected strings ({len(want(root, ABSTRACT_REQUIRED))} in the "
+          f"abstract), {n_ph} section phrases; {len(found)} problem(s)")
+    return 1 if found else 0
 
 
 if __name__ == "__main__":

@@ -113,8 +113,10 @@ def _text(root):
 
 def test_passes_when_text_carries_every_required_string(tmp_path):
     root = _fake_repo(tmp_path)
-    (root / "manuscript" / "manuscript.md").write_text(_text(root), encoding="utf-8")
-    assert cmn.main(root) == 0
+    text = _text(root)  # a bare list of strings: the value-level checks pass; the section
+    # phrases, exhibit and skeleton checks (R34) need a real manuscript and have their own tests
+    assert cmn.missing(text, cmn.want(root)) == []
+    assert cmn.unaccounted(text, cmn.catalogue(root)) == []
 
 
 def test_fails_on_a_changed_number(tmp_path, capsys):

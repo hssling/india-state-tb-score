@@ -135,42 +135,57 @@ python -I verification/check_all.py
 6/8 checks passed (1 skipped)      # exit 1
 ```
 
-## Manuscript numbers (check_manuscript_numbers.py)
+## Manuscript numbers (check_manuscript_numbers.py, mutate_manuscript.py)
 
-Run on 17 November 2026 on a scratch copy of the repository (not the repository itself); the
-real `manuscript/manuscript.md` was never edited (MD5 identical before and after). The
-unmutated copy passes (53 expected strings, 8 in the abstract, 0 problems). Each of the 92
-numeric tokens in the Abstract (22) and Results (70) prose, excluding table rows and
-reference superscripts, was changed once, one at a time, by adding 1 to its last digit
-(9 becomes 0). A change counts as caught only if the checker exits 1 with a `MISSING` or
-`UNACCOUNTED` line (not a crash).
+Ruling R34 replaced the first version of this check (55 of 92 caught, 17 November 2026,
+before the fix). Its layers now are: (1) the catalogue strings derived from `outputs/`,
+`data/` and the code, required whole and every other number accounted for; (2) per-section
+whole-phrase requirements (`SECTION_REQUIRED`: the label's words plus the value, checked
+only inside the Abstract, Methods, Results or Discussion), so "ρ 0.82–0.93" and "n = 19"
+cannot be satisfied by the same number elsewhere; (3) exhibit checks (every cited Table I-IV,
+Figure 1-4 and Web table 1-4 exists, first citations ascend within each type, each is cited
+at least once, IJMR L586-587), label ranges (Q1-Q4, R1-R4, indicators 1-9) and years tied
+to the data (report years 2023 and 2024, change years 2022 and 2023, survey span 2019–21,
+all pinned in phrases); (4) a golden skeleton, `manuscript/number_skeleton.json`, the
+ordered list of every number token (and every Table numeral) of the Abstract, Methods,
+Results, Discussion and Legends, nothing masked. The skeleton is rewritten only by the
+deliberate command `python -I verification/check_manuscript_numbers.py --regenerate`, after
+a reviewed edit of the text. R4 is the pre-specified threshold-band rule that the text says
+could not be tested, so R1-R4 are valid.
 
-| Class of token | Mutated | Caught |
+The harness, `verification/mutate_manuscript.py` (fixture tests: `tests/test_mutation_harness.py`),
+changes each of the 305 number tokens and Table numerals of those five sections one at a
+time, in memory, on a copy of `manuscript/manuscript.md` (the file is never written), and
+runs the whole checker on each copy. Two kinds: `inc` (last digit plus one; a Roman
+numeral to the next) and `swap` (the token replaced by the next different token of the
+same section, a value of the right form). Run on 17 November 2026 on the real manuscript:
+
+| Mutation kind | Tokens | Caught |
 |---|---|---|
-| Values (counts, percentages, coefficients, intervals, limits) | 56 | 55 |
-| Labels: study years (2019-2026), `21` of "2019–21", Q1–Q4, R1–R3, indicator numbers, Table, Figure and Web table numbers | 36 | 0 |
-| **All** | **92** | **55** |
+| inc | 305 | 305 |
+| swap | 305 | 305 |
+| **All** | **610** | **610** |
 
-Not caught (37):
+Layers without the skeleton (to show what each layer adds; same 610 changes): the value
+and phrase layers alone catch 170 of 305 `inc` and 206 of 305 `swap` changes. What
+only the skeleton catches: changes of years, exhibit and indicator numbers and other labels
+where the new value is itself valid, such as a swap of "Table III" for "Table II" or of
+"Figure 1" for "Figure 2", "indicator 5" for "indicator 8", "2023" for "2022" (the exhibit
+checks catch only a swap that leaves an exhibit uncited, out of order or non-existent), and
+a changed number inside the Methods and Legends text that no phrase quotes.
 
-- 36 label tokens. These are masked by design (the ALLOW patterns in the checker's
-  docstring): a label is not a value derived from the code, so changing "Table II" to
-  "Table III", "indicator 4" to "indicator 5" or "2023" to "2024" is not detected. Cross-
-  references and years need reading, or a separate label check.
-- 1 value: the Results sentence "0.82–0.93" changed to "0.83–0.93". The abstract still
-  carries the correct "0.82–0.93", so the required string is present, and 0.83 is itself
-  a catalogue value of the same form (elsewhere in the study), so the changed number is
-  masked rather than unaccounted.
+Known limits, unchanged in kind:
 
-Known limits of the check:
+1. **The skeleton is a golden file.** It proves the text still has the numbers it had when
+   the author last regenerated it, not that they are right; correctness comes from layers
+   1 and 2, which derive the values from the code. A reviewed edit that changes a number
+   must be followed by `--regenerate`, which is a human decision.
+2. **Numbers written as words** ("two indicators", "nine indicators", "four questions") are
+   not tokens and are unchecked, except where a phrase pins them (the Methods
+   "seven dated deviations", "Two indicators (15 points)").
+3. **Table rows** are checked by the rendering test (`tables.md` equals a fresh rendering of
+   `outputs/`), not by the prose scan or the skeleton. The Tables section is not mutated.
+4. The harness changes numbers, not words: a rewording that keeps every number passes.
 
-1. **Masking is by value, not by label.** Any number equal to some catalogue value is
-   accepted wherever it occurs. A swap to another catalogue value of the same form passes
-   (for example "n = 19" changed to "n = 34" in the Results prose, where 34 is a catalogue
-   count and the Abstract still carries "n = 19"; confirmed on the scratch copy: exit 0,
-   no problem reported). The REQUIRED strings give coverage only where the label's own
-   string is missing from the whole text.
-2. **Numbers written as words** ("two indicators", "nine indicators", "four questions",
-   "one in five") are not checked.
-3. Table rows are checked by the separate rendering test (`tables.md` equals a fresh
-   rendering of `outputs/`), not by the prose scan.
+The real `manuscript.md` is not changed by the harness (MD5 128acafdad85d75fd41654c872cda18a
+before and after).
