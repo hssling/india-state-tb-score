@@ -462,6 +462,13 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     for rule, r in explore_udst(root).items():
         w[f"explore.{rule}.in_band"] = k_of_n(int(r["n_in_band"]), int(r["n_compared"]))
         w[f"explore.{rule}.outside"] = listing(r["outside"].split("; ") if r["outside"] else [])
+    # R3 divides by the best state's achievement, so a common scaling cannot change it
+    r3 = explore_udst(root)["R3"]
+    conf = sel["per_rule"]["R3"]
+    if (int(r3["n_in_band"]), round(float(r3["max_violation"]), 9)) != (
+            conf["n_in_band"], round(conf["max_violation"], 9)):
+        raise ValueError("exploratory R3 differs from the confirmatory R3")
+    w["explore.R3.unchanged"] = "R3 unchanged"
 
     # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
     ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
@@ -531,7 +538,7 @@ REQUIRED = [
     "q4.R2.all.exceeds", "q4.R2.all.rho_n", "q4.R2.no1.rho_ci", "q4.R1.no1.rho_context",
     "q4.excluded", "q4.se0_counts", "q4.se0_cause", "q4.ind4_error.*",
     # exploratory (plan section 13)
-    "explore.R2.in_band", "explore.R2.outside",
+    "explore.R2.in_band", "explore.R2.outside", "explore.R1.in_band", "explore.R3.unchanged",
     # plan 9.3: deaths and loss to follow-up, reported descriptively
     "ctx.*",
     # Methods constants. The seed value is not printed in the blinded text (it can be
@@ -722,7 +729,8 @@ SECTION_REQUIRED: dict[str, list[str]] = {
         "{q3.units_analysed} representing {q3.states_covered} were analysed",
         "{q3.survey_excluded} not covered, and {q3.survey_not_named} not named by the survey",
         "In the exploratory analysis, with indicator 3 scaled to CTD's national figure, "
-        "{explore.R2.in_band} states lay in the band under R2; the exception, "
+        "{explore.R2.in_band} states lay in the band under R2 (R1, {explore.R1.in_band}; "
+        "{explore.R3.unchanged}); the exception, "
         "{explore.R2.outside}, lay below it",
         "was ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} (Table IV, Figure 3)",
         "{ctx.died.national} patients of the 2022 cohort died",
