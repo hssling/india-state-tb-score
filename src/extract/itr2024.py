@@ -9,6 +9,11 @@ Writes data/extracted/itr2024_*.csv, its rows of data/source_choices.csv and
 data/extracted/definitions.csv (other years' rows are kept), and
 outputs/q1_target_check.txt. No score is computed here.
 
+itr2024_population.csv holds the state populations used as Q3 weights (plan
+§3, §9.1): notified ÷ annexure 1.2 notification rate per 100,000 × 10^5, for
+the 36 State/UT rows and the INDIA row (last); the sum of the state
+populations must lie within 1% of the INDIA row's.
+
 In itr2024_indicators.csv, pdf_page and table_id are "numerator;denominator"
 composites (e.g. "199;191", "Annexure 2.1;Annexure 1.4"), written in that
 form even when both parts are equal; downstream code must split on ";".
@@ -35,6 +40,7 @@ SOURCE_FILE = "data_raw/india_tb_report/ITR2024.pdf"
 SCORE_YEAR = 2023
 TABLE_11_1_TARGET = 2_761_682  # plan §5.3
 TOLERANCE = 0.001  # plan §5.3: 0.1%
+POP_TOLERANCE = 0.01  # Q3 population: state sum within 1% of the INDIA row
 PAGE_OFFSET = 30  # PDF page = printed annexure page + 30 (plan §5.1)
 
 
@@ -123,6 +129,7 @@ class Column:
     index: int  # 0-based cell index after the State/UT name
     header: str  # verbatim (flattened) column header
     count: bool = False  # parse with cells.parse_count (integral floats)
+    rate: bool = False  # a rate (float, parse_rate); not additive, not summed
 
 
 @dataclass(frozen=True)
@@ -141,6 +148,8 @@ SPECS: dict[str, Spec] = {s.key: s for s in (
     Spec("a1_2", "Annexure 1.2", "1.2. TB case notification", 157, (187, 188), 9, {
         "target_total": Column(2, "Target of TB patients expected to be notified: Total"),
         "notified_total": Column(5, "TB patients notified, n(% of achievement against target): Total"),
+        "rate_total": Column(8, "TB case notification rate (per lakh population): Total",
+                             rate=True),
     }),
     Spec("a1_4", "Annexure 1.4", "1.4. Patient transfer status and treatment initiation status",
          161, (191, 192), 9, {
@@ -195,9 +204,9 @@ _TITLE = re.compile(r"^\d+(?:\.\d+)?\.\s")
 @dataclass
 class Table:
     spec: Spec
-    rows: dict[str, dict[str, int | None]]
+    rows: dict[str, dict[str, int | float | None]]
     pages: dict[str, int]
-    national: dict[str, int]
+    national: dict[str, int | float]
     blanks: dict[str, list[str]]  # column -> states printed blank
 
 
@@ -206,10 +215,23 @@ def _lines(pdf: str, page: int) -> tuple[str, ...]:
     return tuple(pdftext.page_lines(Path(pdf), page))
 
 
-def _value(cell: Cell, col: Column, where: str) -> int | None:
+_RATE = re.compile(r"^\d+(?:\.\d+)?$")
+
+
+def parse_rate(s: str) -> float:
+    """A positive rate cell: '142.8' -> 142.8, '129' -> 129.0. Zero, text and
+    thousands separators raise ValueError (a zero rate gives no population)."""
+    if not _RATE.match(s.strip()) or float(s) <= 0:
+        raise ValueError(f"not a positive rate cell: {s!r}")
+    return float(s)
+
+
+def _value(cell: Cell, col: Column, where: str) -> int | float | None:
     if cell.n is None:
         return None
     try:
+        if col.rate:
+            return parse_rate(cell.n)
         return cells.parse_count(cell.n) if col.count else cells.parse_int(cell.n)
     except ValueError as e:
         raise ValueError(f"{where}: {e}") from None
@@ -268,13 +290,16 @@ def extract_table(pdf: Path, spec: Spec) -> Table:
 
 
 def check_national(t: Table) -> list[tuple[str, int, int, int]]:
-    """State sum == printed national row, for every extracted column.
+    """State sum == printed national row, for every extracted count column.
 
-    Blank state cells are left out of the sum. Returns (column, state sum,
-    national, number of blank states); raises ValueError on a mismatch.
+    Rate columns are not additive and are skipped. Blank state cells are
+    left out of the sum. Returns (column, state sum, national, number of
+    blank states); raises ValueError on a mismatch.
     """
     res = []
-    for name in t.spec.columns:
+    for name, col in t.spec.columns.items():
+        if col.rate:
+            continue
         total = sum(v[name] for v in t.rows.values() if v[name] is not None)
         if total != t.national[name]:
             raise ValueError(
@@ -515,6 +540,41 @@ def extract_drtb_outcomes(tables: dict[str, Table]) -> tuple[list[dict], dict[st
     return rows, dict(t.national)
 
 
+# ---- population (plan §3; §9.1 Aggregation) -------------------------------
+
+def population_check(pops: dict[str, float], india: float) -> float:
+    """Relative difference (state sum - INDIA) / INDIA; ValueError beyond 1%."""
+    total = sum(pops.values())
+    rel = (total - india) / india
+    if abs(rel) > POP_TOLERANCE:
+        raise ValueError(f"population: state sum {total:.0f} vs INDIA {india:.0f} "
+                         f"differ by {rel:.3%}, more than 1%")
+    return rel
+
+
+def population_rows(tables: dict[str, Table]) -> tuple[list[dict], dict]:
+    """Annexure 1.2: population = notified ÷ rate per 100,000 × 10^5.
+
+    One row per State/UT (states.ALL order) and the INDIA row last. A blank
+    notified count or rate raises ValueError. Returns the rows and the check
+    {"state_sum", "india", "relative"}.
+    """
+    t = tables["a1_2"]
+    out = []
+    for label, v, page in [(s, t.rows[s], t.pages[s]) for s in states.ALL] + [
+            ("INDIA", t.national, t.spec.pages[-1])]:
+        n, r = v["notified_total"], v["rate_total"]
+        if n is None or r is None:
+            raise ValueError(f"annexure 1.2 {label}: notified {n}, rate {r}")
+        out.append({"state": label, "notified": n, "rate_per_100k": r,
+                    "population": n / r * 1e5, "source_file": SOURCE_FILE,
+                    "pdf_page": page, "table_id": t.spec.table_id})
+    pops = {r["state"]: r["population"] for r in out[:-1]}
+    india = out[-1]["population"]
+    rel = population_check(pops, india)
+    return out, {"state_sum": sum(pops.values()), "india": india, "relative": rel}
+
+
 # ---- source choices (plan §5.4 item 7) -----------------------------------
 
 def _pages(key: str) -> str:
@@ -546,6 +606,7 @@ def source_choices(check: dict, tables: dict[str, Table], udst_kpi_pct: int) -> 
     evidence = ", ".join(
         _ratio(a21, s, "hiv_known_total", a14, "net_notified_total")
         for s in ("Andaman and Nicobar Islands", "Delhi", "Puducherry"))
+    _, pop = population_rows(tables)
     ch = lambda key, col: (SPECS[key].table_id, _pages(key), SPECS[key].columns[col].header)  # noqa: E731
     net = ch("a1_4", "net_notified_total")
     net_note = ("Net notified (plan §5.4 item 7): annexure 1.4 'Net TB patients* notified "
@@ -631,6 +692,13 @@ def source_choices(check: dict, tables: dict[str, Table], udst_kpi_pct: int) -> 
          "(no 'completed' column printed). data/extracted/itr2024_drtb_outcomes.csv."),
         ("q3_secondary", "denominator", *ch("a4_13", "cohort_n"), "§9.2",
          "Lakshadweep printed #N/A in every cell: blank."),
+        ("q3_population", "population", *ch("a1_2", "rate_total"), "§9.1 Aggregation; §3",
+         "Population weight for Q3 state groups: annexure 1.2 'TB patients notified' "
+         "Total (diagnosing PHI) ÷ 'TB case notification rate (per lakh population)' "
+         "Total × 10^5, for every State/UT and the INDIA row. Rates are printed to one "
+         f"decimal. Check: sum of the 36 State/UT populations {pop['state_sum']:,.0f} vs "
+         f"INDIA {pop['india']:,.0f}, difference {pop['relative']:.3%} (tolerance 1%). "
+         "data/extracted/itr2024_population.csv."),
         ("scoring_rule_R4", "bands", "not stated", "123;124;175", "", "§6.1; §5.4 item 7",
          "ITR2024 states no threshold bands for the score (chapter 11 text and Table 11.2 "
          "PDF 123; Box 11.1 PDF 124; Table 16.3 PDF 175). Other CTD documents not searched "
@@ -720,6 +788,11 @@ def write_all(pdf: Path, extracted: Path, choices_path: Path, check_path: Path) 
                [{"state": s, "cohort_year": 2022, **t33.rows[s], "source_file": SOURCE_FILE,
                  "pdf_page": t33.pages[s], "table_id": t33.spec.table_id}
                 for s in states.ALL])
+    pop_rows, _ = population_rows(tables)
+    _write_csv(extracted / "itr2024_population.csv",
+               ["state", "notified", "rate_per_100k", "population",
+                "source_file", "pdf_page", "table_id"],
+               [{**r, "population": f"{r['population']:.1f}"} for r in pop_rows])
     annex.merge_source_choices(choices_path, SCORE_YEAR,
                                source_choices(check, tables, table_11_1_udst_pct(pdf)))
     annex.merge_definitions(extracted / "definitions.csv", EDITION, definitions(pdf))
@@ -734,6 +807,9 @@ def main() -> None:
         for col, total, nat, nblank in check_national(t):
             extra = f"; blank: {', '.join(t.blanks[col])}" if nblank else ""
             print(f"  {t.spec.table_id} {col}: {total} = {t.spec.national_label} {nat} OK{extra}")
+    _, pop = population_rows(res["tables"])
+    print(f"Population (annexure 1.2): state sum {pop['state_sum']:,.0f} vs INDIA "
+          f"{pop['india']:,.0f}: {pop['relative']:.3%} (within 1%) OK")
     c = res["check"]
     print(f"Plan 5.3: expected {c['expected']} vs target {c['target']}: "
           f"{c['relative']:.4%} -> {c['verdict']}")

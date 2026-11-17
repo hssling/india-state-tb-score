@@ -78,6 +78,24 @@ def test_scores_parse_two_column_wrapped_layout():
                    "Ladakh": "94.82"}
 
 
+def test_population_check_within_one_percent():
+    pops = {"A": 600.0, "B": 400.0}
+    assert itr2024.population_check(pops, 1000.0) == pytest.approx(0.0)
+    assert itr2024.population_check(pops, 1009.0) == pytest.approx(1000 / 1009 - 1)
+    with pytest.raises(ValueError, match="1%"):
+        itr2024.population_check(pops, 1011.0)
+    with pytest.raises(ValueError, match="1%"):
+        itr2024.population_check({"A": 600.0, "B": 412.0}, 1000.0)
+
+
+def test_parse_rate_cell():
+    assert itr2024.parse_rate("142.8") == 142.8
+    assert itr2024.parse_rate("129") == 129.0
+    for bad in ("1,2.3", "abc", "", "0"):
+        with pytest.raises(ValueError):
+            itr2024.parse_rate(bad)
+
+
 def test_target_verdict_tolerance():
     assert itr2024.target_verdict(2_761_682 + 2761, 2_761_682) == "AGREE"
     assert itr2024.target_verdict(2_761_682 - 2761, 2_761_682) == "AGREE"
@@ -102,7 +120,9 @@ def test_each_table_matches_printed_total():
     assert tables, "no tables extracted"
     for key, t in tables.items():
         states.require_all(t.rows, 2023)
-        for col in t.spec.columns:
+        for col, spec in t.spec.columns.items():
+            if spec.rate:  # rates are not additive
+                continue
             vals = [r[col] for r in t.rows.values() if r[col] is not None]
             assert sum(vals) == t.national[col], (key, col)
     # and per indicator: numerators and denominators sum to the printed rows
@@ -157,11 +177,30 @@ def test_drtb_outcomes():
 
 
 @needs_pdf
+def test_population_rows():
+    tables = itr2024.extract_tables(PDF)
+    rows, check = itr2024.population_rows(tables)
+    assert [r["state"] for r in rows[:-1]] == list(states.ALL)
+    assert rows[-1]["state"] == "INDIA"
+    an = rows[0]
+    assert an["state"] == "Andaman and Nicobar Islands"
+    assert (an["notified"], an["rate_per_100k"]) == (561, 142.8)
+    assert an["population"] == pytest.approx(561 / 142.8 * 1e5)
+    assert (rows[-1]["notified"], rows[-1]["rate_per_100k"]) == (2552257, 178.8)
+    assert abs(check["relative"]) <= 0.01
+    assert check["state_sum"] == pytest.approx(
+        sum(r["population"] for r in rows[:-1]))
+    for r in rows:
+        assert r["table_id"] == "Annexure 1.2" and r["pdf_page"] in (187, 188)
+
+
+@needs_pdf
 def test_committed_csvs_match_extraction(tmp_path):
     itr2024.write_all(PDF, tmp_path / "extracted", tmp_path / "source_choices.csv",
                       tmp_path / "q1_target_check.txt")
     for name in ("itr2024_scores.csv", "itr2024_indicators.csv",
-                 "itr2024_drtb_outcomes.csv", "itr2024_tsr_cohort.csv"):
+                 "itr2024_drtb_outcomes.csv", "itr2024_tsr_cohort.csv",
+                 "itr2024_population.csv"):
         assert (tmp_path / "extracted" / name).read_text(encoding="utf-8") == \
             (EXTRACTED / name).read_text(encoding="utf-8"), name
     # data/source_choices.csv and definitions.csv also hold other years' rows

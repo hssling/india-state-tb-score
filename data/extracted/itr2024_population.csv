@@ -1,0 +1,38 @@
+state,notified,rate_per_100k,population,source_file,pdf_page,table_id
+Andaman and Nicobar Islands,561,142.8,392857.1,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Andhra Pradesh,89064,167.3,53236102.8,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Arunachal Pradesh,2604,100.8,2583333.3,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Assam,51862,142.7,36343377.7,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Bihar,186974,141.8,131857545.8,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Chandigarh,6721,556.4,1207943.9,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Chhattisgarh,38924,129.0,30173643.4,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Dadra and Nagar Haveli and Daman and Diu,1167,132.7,879427.3,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Delhi,100523,507.2,19819203.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Goa,2082,132.7,1568952.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Gujarat,144507,199.5,72434586.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Haryana,80490,260.8,30862730.1,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Himachal Pradesh,15648,202.9,7712173.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Jammu and Kashmir,11754,77.6,15146907.2,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Jharkhand,61717,148.0,41700675.7,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Karnataka,81862,110.6,74016274.9,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Kerala,21799,61.5,35445528.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Ladakh,320,122.5,261224.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Lakshadweep,6,9.0,66666.7,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Madhya Pradesh,184691,209.0,88368899.5,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Maharashtra,227664,175.9,129428084.1,data_raw/india_tb_report/ITR2024.pdf,187,Annexure 1.2
+Manipur,2495,69.4,3595100.9,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Meghalaya,4908,126.1,3892149.1,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Mizoram,2273,172.3,1319210.7,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Nagaland,4287,204.1,2100441.0,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Odisha,62387,130.5,47806130.3,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Puducherry,4169,263.5,1582163.2,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Punjab,55224,180.6,30578073.1,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Rajasthan,165123,203.8,81022080.5,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Sikkim,1391,206.4,673934.1,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Tamil Nadu,98251,125.3,78412609.7,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Telangana,74994,184.5,40647154.5,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Tripura,3386,83.5,4055089.8,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Uttar Pradesh,632872,260.1,243318723.6,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+Uttarakhand,26829,220.9,12145314.6,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+West Bengal,102728,100.3,102420737.8,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
+INDIA,2552257,178.8,1427436800.9,data_raw/india_tb_report/ITR2024.pdf,188,Annexure 1.2
