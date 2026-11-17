@@ -304,7 +304,7 @@ SOURCES: dict[int, tuple[tuple[str, str], tuple[str, str]]] = {
 MISSING = {
     5: "5: no state-wise table with the eligible-beneficiary denominator of plan §5.1 row 5 "
        "(annexure 9, PDF 323-324, prints payments of total notified only); missing under "
-       "§5.4 item 4 (controller ruling R18, 17 Nov 2026).",
+       "§5.4 item 4 (§13 item 4, 17 Nov 2026).",
     7: "7: no state-wise table of expenditure against the approved ROP (chapter 15, "
        "Table 15.1 Financial Performance, PDF 176, is national only; no such annexure).",
     8: "8: annexure 7.2 (PDF 303-304) fails the printed-total check in every column "
@@ -373,7 +373,7 @@ def extract_drtb_outcomes(tables: dict[str, Table]) -> tuple[list[dict], dict[st
 # ---- source choices (plan §5.4 item 7) ---------------------------------------------
 
 # Pages without a text layer rendered and read in the bounded search for a
-# national 2022 notification target (controller ruling R19, 17 Nov 2026):
+# national 2022 notification target (§13 item 5, 17 Nov 2026):
 # lists of tables/figures (21-23), executive summary (24, 25, 27), chapter 2
 # (43, 44), chapter 3B (61, 62), and Tables 15.3 and 15.5 (178, 180; these
 # two have a text layer and were also read as text). No target was found.
@@ -443,7 +443,7 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
          f"2026). The edition prints no national 2022 notification target outside annexure "
          f"1.2: none in its text layer (every text page searched for 'target'; no KPI table "
          f"like ITR2024's Table 11.1), and none in a bounded visual search of the rendered "
-         f"pages without a text layer (controller ruling R19; PDF {searched}: list of tables "
+         f"pages without a text layer (§13 item 5; PDF {searched}: list of tables "
          f"and figures, executive summary, chapters 2 and 3B on notification, Tables 15.3 and "
          f"15.5). Used: annexure 1.2 'Target' (INDIA {target:,}) as each state's "
          f"denominator. The column is labelled 'Target TB patients expected to be notified', "
@@ -474,7 +474,7 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
          "Q2 variant only: patients notified in 2021 whose outcomes annexure 3.3 reports. "
          "Stored in data/extracted/itr2023_tsr_cohort.csv."),
         (5, "numerator", "missing", _pages(pages, "a9"), "", "§5.1 row 5; §5.4 item 4; §5.5",
-         "MISSING for 2022 (controller ruling R18, 17 Nov 2026; §13). No state-wise table "
+         "MISSING for 2022 (§13 item 4, 17 Nov 2026). No state-wise table "
          "matches plan §5.1 row 5's denominator, total eligible TB patients: annexure 9 "
          "(Ni-kshay Poshan Yojana) prints 'BENEFICIARIES PAID OF AT LEAST ONE BENEFIT OF "
          "TOTAL NOTIFIED (%)' against 'TOTAL NOTIFICATION' (equal to annexure 1.2 notified, "

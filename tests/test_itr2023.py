@@ -118,7 +118,7 @@ def test_spot_values():
 def test_indicator_rows():
     rows, _ = itr2023.build_indicators(itr2023.extract_tables(PDF))
     present = {r["indicator"] for r in rows}
-    # 5: no eligible-beneficiary denominator (ruling R18); 7, 9 not located; 8 fails its total
+    # 5: no eligible-beneficiary denominator (plan 13 item 4); 7, 9 not located; 8 fails its total
     assert present == {1, 2, 3, 4, 6}
     assert set(itr2023.MISSING) == {5, 7, 8, 9}
     for ind in present:

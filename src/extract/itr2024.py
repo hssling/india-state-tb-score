@@ -471,8 +471,8 @@ SOURCES: dict[int, tuple[tuple[str, str], tuple[str, str]]] = {
 
 MISSING = {
     7: "7: no state-wise table located in ITR2024 (no annexure or table on expenditure "
-       "against the approved ROP; Table 16.1, PDF p. 174, is national only). Controller "
-       "ruling R4: no web search, no download.",
+       "against the approved ROP; Table 16.1, PDF p. 174, is national only). The "
+       "search outside the India TB Report was closed without a table (§13 item 1).",
     9: "9: not located. Annexure 2.5 (PDF pp. 203-204) prints PLHIV screened, referred, "
        "tested and diagnosed with TB, but no PLHIV given IPT/TPT and no eligible-PLHIV "
        "denominator; no other state-wise table in the annexure list.",

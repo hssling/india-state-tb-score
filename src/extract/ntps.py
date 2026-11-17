@@ -1,6 +1,6 @@
 """Extract the ICMR National TB Prevalence Survey 2019-21: state and state-group units.
 
-Plan §9.1 (ruling R9). The survey reports microbiologically confirmed
+Plan §9.1. The survey reports microbiologically confirmed
 pulmonary TB per 100,000 population aged >= 15 years for 20 "state groups"
 (Table 20, PDF pp. 90-91). Table 20 prints two such measures; the one the
 report calls its best estimate (the model with imputation and inverse
@@ -372,7 +372,7 @@ def source_choices(res: dict) -> list[dict]:
     return [
         base | {"component": "prevalence", "table_id": TABLE, "pdf_pages": "90;91",
                 "column_header_verbatim": HEADER,
-                "rule_from_plan": "§9.1 (ruling R9): microbiologically confirmed pulmonary TB "
+                "rule_from_plan": "§9.1: microbiologically confirmed pulmonary TB "
                                   "per 100,000 aged >= 15 years, with 95% CI",
                 "note": f"{TABLE} ('{res['units'][0]['measure_verbatim'].split(': ')[0]}') "
                         "prints two measures for each of the 20 state groups, both "

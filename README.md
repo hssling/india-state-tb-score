@@ -42,9 +42,65 @@ URLs and verify each against the SHA-256 digest recorded in the plan.
 
 ## Reproducing the analysis
 
-To follow. The code (Python, standard library for all analysis; pdfplumber for
-table extraction only) and the commands to reproduce every table and figure
-will be added after the plan.
+Python 3.11 or later. Analysis code uses the standard library only;
+`pdfplumber` is needed for the extraction scripts and `pytest` for the tests.
+Run everything from the repository root.
+
+```
+# 1. Fetch the source PDFs into data_raw/ and verify their SHA-256 digests
+python -I tools/fetch_sources.py
+
+# 2. Extract the tables (rewrites data/extracted/ and data/source_choices.csv)
+python -I src/extract/itr2024.py
+python -I src/extract/itr2023.py
+python -I src/extract/ntps.py
+python -I src/extract/itr2021.py      # reports BLOCKED: that edition is a scan
+
+# 3. Run the analyses (rewrites outputs/)
+python -I src/q1_reproduce.py 2023
+python -I src/q2_robust.py 2023
+python -I src/q3_validity.py 2023
+python -I src/q4_change.py
+
+# 4. Verify: tests, analyses, extraction totals, plan order, deviations log,
+#    and byte-for-byte reproduction of the committed outputs
+python -I verification/check_all.py
+```
+
+`check_all.py` prints `N/N checks passed` and exits non-zero on any failure.
+The extraction-totals check is reported as skipped when the source PDFs are
+not present. `verification/MUTATIONS.md` records one deliberate break per check
+and the failure each produced.
+
+### Files
+
+Inputs and extracted data:
+
+- `data/source_manifest.csv`: URL, size and SHA-256 digest of each source PDF.
+- `data/extracted/*.csv`: indicator values, populations, outcomes, printed
+  scores and prevalence estimates extracted from the PDFs, with source file,
+  PDF page and table for every value.
+- `data/extracted/definitions.csv`: each edition's indicator definitions, as printed.
+- `data/source_choices.csv`: for each value, which table was used and why.
+
+Outputs (`outputs/`):
+
+- `q1_2023.csv`: reconstructed 2023 scores under each scoring rule, against the published scores.
+- `q1_2023_selection.json`: which scoring rules fit the published scores, and the rules carried into Q2 to Q4.
+- `q1_target_check.txt`: the plan 5.3 check of the notification target against annexure 1.2.
+- `q2_2023_summary.csv`: rank agreement with the base score under each alternative weighting, indicator set and denominator.
+- `q2_2023_fifths.csv`: share of states that move between fifths under each alternative.
+- `q2_2023_saturation.csv`: for each indicator, the share of states at 95% or more of target.
+- `q3_2023_summary.csv`: rank correlations of score with NTPS prevalence and with the secondary measures.
+- `q3_2023_units.csv`: score and prevalence for each NTPS reporting unit.
+- `q3_2023_secondary_states.csv`: state-level score and treatment success for the secondary analysis.
+- `q4_2022_2023_states.csv`: each state's change in score between score years 2022 and 2023, with its noise threshold.
+- `q4_2022_2023_summary.csv`: number of states whose change exceeds the threshold, and the rank correlation of change with the 2022 score.
+
+Code: `src/score.py` (indicator achievement and scoring rules), `src/states.py`
+(canonical state and union territory names), `src/extract/` (table extractors),
+`src/q1_reproduce.py` to `src/q4_change.py` (analyses), `tools/fetch_sources.py`
+(download and verification), `tests/` (unit tests), `verification/` (checks).
 
 ## Licence
 

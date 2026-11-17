@@ -6,7 +6,7 @@ Only comparison (b) of 10.1 is run: both years re-scored under one
 definition. No edition prints numeric state scores for 2022, so (a), the
 published change, is not possible (plan 13 item 2). Both years are scored
 on the indicators available in both, {1,2,3,4,6}, as the rescaled partial
-score (plan 13 item 7; controller ruling R24), and again with indicator 1
+score (plan 13 item 7), and again with indicator 1
 excluded, {2,3,4,6} (plan 13 item 5). Rules: outputs/q1_2023_selection.json
 rules_for_q2q4 (primary) and sensitivity_rules. Primary row: R2, {1,2,3,4,6}.
 
@@ -23,7 +23,7 @@ max points when rescaled; / the year's maximum a over states under R3).
 Criterion (10.3): |s_2023 - s_2022| > 1.96 sqrt(SE_2023^2 + SE_2022^2).
 10.4: Spearman's rho (q3_validity.spearman_ci) between s_2022 and the
 change, over the states with a score in both years; change as % of s_2022.
-Union territories are flagged by canonical UT status (ruling R28).
+Union territories are flagged by canonical UT status (plan 10.4).
 
 Writes outputs/q4_2022_2023_states.csv and outputs/q4_2022_2023_summary.csv.
 """
@@ -43,12 +43,12 @@ from src.q3_validity import spearman_ci  # noqa: E402
 
 Z975 = 1.96
 YEARS = (2022, 2023)
-COMMON = (1, 2, 3, 4, 6)       # ruling R24 / plan 13 item 7
+COMMON = (1, 2, 3, 4, 6)       # plan 13 item 7
 NO_IND1 = (2, 3, 4, 6)         # plan 13 item 5
 SETS = ((COMMON, "1,2,3,4,6"), (NO_IND1, "2,3,4,6 (indicator 1 excluded)"))
 UTS = ("Andaman and Nicobar Islands", "Chandigarh",
        "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
-       "Ladakh", "Lakshadweep", "Puducherry")  # ruling R28: canonical UT status
+       "Ladakh", "Lakshadweep", "Puducherry")  # canonical UT status
 
 
 def _used(ach, indicators):
