@@ -1,0 +1,61 @@
+rule,role,unit,unit_type,members_scored,members_excluded,unit_score,dropped,prevalence,ci_low,ci_high
+R2,primary,Andhra Pradesh,state,Andhra Pradesh,,83.01529516884571,0,265.0,138.0,392.0
+R2,primary,Bihar,state,Bihar,,68.29286361008053,0,327.0,236.0,417.0
+R2,primary,Chhattisgarh,state,Chhattisgarh,,77.18998013355574,0,454.0,285.0,624.0
+R2,primary,Delhi,state,Delhi,,77.11332213534976,0,534.0,365.0,704.0
+R2,primary,Gujarat,group,Gujarat;Dadra and Nagar Haveli and Daman and Diu,,88.18015914836695,0,141.0,78.0,203.0
+R2,primary,"Himachal Pradesh, Uttarakhand, Jammu & Kashmir",group,Himachal Pradesh;Uttarakhand;Jammu and Kashmir,,87.34057486796088,0,344.0,154.0,534.0
+R2,primary,Haryana,state,Haryana,,86.10772718197117,0,465.0,326.0,605.0
+R2,primary,Jharkhand,state,Jharkhand,,79.8577412110806,0,352.0,201.0,503.0
+R2,primary,Karnataka,state,,Karnataka,,1,276.0,180.0,372.0
+R2,primary,Kerala,state,Kerala,,86.59246849510393,0,115.0,47.0,184.0
+R2,primary,Maharashtra,group,Maharashtra;Goa,,82.10779156431964,0,161.0,105.0,218.0
+R2,primary,Madhya Pradesh,state,Madhya Pradesh,,81.58440289586878,0,386.0,199.0,573.0
+R2,primary,North Eastern States,group,Arunachal Pradesh;Assam;Manipur;Meghalaya;Mizoram;Nagaland;Tripura;Sikkim,,79.33356099800734,0,276.0,123.0,429.0
+R2,primary,Odisha,state,Odisha,,89.31987841816778,0,243.0,141.0,345.0
+R2,primary,Punjab,group,Punjab;Chandigarh,,70.89111473957578,0,283.0,197.0,368.0
+R2,primary,Rajasthan,state,Rajasthan,,82.53790528860573,0,484.0,361.0,607.0
+R2,primary,Tamil Nadu,group,Tamil Nadu;Puducherry,,84.59535373111058,0,301.0,241.0,360.0
+R2,primary,Telangana,state,Telangana,,78.99349532379551,0,287.0,199.0,376.0
+R2,primary,Uttar Pradesh,state,Uttar Pradesh,,88.41474569212708,0,481.0,397.0,566.0
+R2,primary,West Bengal,state,West Bengal,,81.76947865915369,0,167.0,82.0,252.0
+R1,sensitivity,Andhra Pradesh,state,Andhra Pradesh,,83.01529516884571,0,265.0,138.0,392.0
+R1,sensitivity,Bihar,state,Bihar,,68.29286361008053,0,327.0,236.0,417.0
+R1,sensitivity,Chhattisgarh,state,Chhattisgarh,,77.18998013355574,0,454.0,285.0,624.0
+R1,sensitivity,Delhi,state,Delhi,,77.11332213534976,0,534.0,365.0,704.0
+R1,sensitivity,Gujarat,group,Gujarat;Dadra and Nagar Haveli and Daman and Diu,,87.43176638285259,0,141.0,78.0,203.0
+R1,sensitivity,"Himachal Pradesh, Uttarakhand, Jammu & Kashmir",group,Himachal Pradesh;Uttarakhand;Jammu and Kashmir,,87.30790397807215,0,344.0,154.0,534.0
+R1,sensitivity,Haryana,state,Haryana,,86.10772718197117,0,465.0,326.0,605.0
+R1,sensitivity,Jharkhand,state,Jharkhand,,79.8577412110806,0,352.0,201.0,503.0
+R1,sensitivity,Karnataka,state,,Karnataka,,1,276.0,180.0,372.0
+R1,sensitivity,Kerala,state,Kerala,,86.59246849510393,0,115.0,47.0,184.0
+R1,sensitivity,Maharashtra,group,Maharashtra;Goa,,82.10779156431964,0,161.0,105.0,218.0
+R1,sensitivity,Madhya Pradesh,state,Madhya Pradesh,,81.58440289586878,0,386.0,199.0,573.0
+R1,sensitivity,North Eastern States,group,Arunachal Pradesh;Assam;Manipur;Meghalaya;Mizoram;Nagaland;Tripura;Sikkim,,79.23191760274965,0,276.0,123.0,429.0
+R1,sensitivity,Odisha,state,Odisha,,89.31987841816778,0,243.0,141.0,345.0
+R1,sensitivity,Punjab,group,Punjab;Chandigarh,,70.89111473957578,0,283.0,197.0,368.0
+R1,sensitivity,Rajasthan,state,Rajasthan,,82.53790528860573,0,484.0,361.0,607.0
+R1,sensitivity,Tamil Nadu,group,Tamil Nadu;Puducherry,,84.58752185203961,0,301.0,241.0,360.0
+R1,sensitivity,Telangana,state,Telangana,,78.99349532379551,0,287.0,199.0,376.0
+R1,sensitivity,Uttar Pradesh,state,Uttar Pradesh,,84.86941948891857,0,481.0,397.0,566.0
+R1,sensitivity,West Bengal,state,West Bengal,,81.76947865915369,0,167.0,82.0,252.0
+R3,sensitivity,Andhra Pradesh,state,Andhra Pradesh,,73.97827763405368,0,265.0,138.0,392.0
+R3,sensitivity,Bihar,state,Bihar,,60.90966824521767,0,327.0,236.0,417.0
+R3,sensitivity,Chhattisgarh,state,Chhattisgarh,,69.28682386664451,0,454.0,285.0,624.0
+R3,sensitivity,Delhi,state,Delhi,,69.05073227476903,0,534.0,365.0,704.0
+R3,sensitivity,Gujarat,group,Gujarat;Dadra and Nagar Haveli and Daman and Diu,,78.44006024578152,0,141.0,78.0,203.0
+R3,sensitivity,"Himachal Pradesh, Uttarakhand, Jammu & Kashmir",group,Himachal Pradesh;Uttarakhand;Jammu and Kashmir,,78.3240557248987,0,344.0,154.0,534.0
+R3,sensitivity,Haryana,state,Haryana,,78.0920332069114,0,465.0,326.0,605.0
+R3,sensitivity,Jharkhand,state,Jharkhand,,71.31439810962168,0,352.0,201.0,503.0
+R3,sensitivity,Karnataka,state,,Karnataka,,1,276.0,180.0,372.0
+R3,sensitivity,Kerala,state,Kerala,,77.5367474651566,0,115.0,47.0,184.0
+R3,sensitivity,Maharashtra,group,Maharashtra;Goa,,73.32456016888092,0,161.0,105.0,218.0
+R3,sensitivity,Madhya Pradesh,state,Madhya Pradesh,,72.9181018861914,0,386.0,199.0,573.0
+R3,sensitivity,North Eastern States,group,Arunachal Pradesh;Assam;Manipur;Meghalaya;Mizoram;Nagaland;Tripura;Sikkim,,71.30993484571592,0,276.0,123.0,429.0
+R3,sensitivity,Odisha,state,Odisha,,80.4062625521311,0,243.0,141.0,345.0
+R3,sensitivity,Punjab,group,Punjab;Chandigarh,,62.417474381032655,0,283.0,197.0,368.0
+R3,sensitivity,Rajasthan,state,Rajasthan,,73.53411843061568,0,484.0,361.0,607.0
+R3,sensitivity,Tamil Nadu,group,Tamil Nadu;Puducherry,,76.86014265561933,0,301.0,241.0,360.0
+R3,sensitivity,Telangana,state,Telangana,,69.8787507583238,0,287.0,199.0,376.0
+R3,sensitivity,Uttar Pradesh,state,Uttar Pradesh,,79.13578650014497,0,481.0,397.0,566.0
+R3,sensitivity,West Bengal,state,West Bengal,,74.3222753069958,0,167.0,82.0,252.0

@@ -1,0 +1,7 @@
+rule,role,analysis,measure,rho,lo,hi,n,expected_direction,excluded
+R2,primary,9.1 primary,NTPS prevalence (unit),-0.23508771929824562,-0.6315882077070036,0.25888955405221653,19,negative,"not covered by the survey: Andaman and Nicobar Islands, Lakshadweep, Ladakh; member without score: Karnataka; unit dropped (no scored member): Karnataka"
+R2,primary,9.2 secondary,MDR/RR-TB treatment success (state),0.4774637127578304,0.15597682664108356,0.7074834030791641,34,not pre-specified,no score: Karnataka; cohort blank or zero: Lakshadweep
+R1,sensitivity,9.1 primary,NTPS prevalence (unit),-0.3,-0.6717939566354089,0.1925329217443231,19,negative,"not covered by the survey: Andaman and Nicobar Islands, Lakshadweep, Ladakh; member without score: Karnataka; unit dropped (no scored member): Karnataka"
+R1,sensitivity,9.2 secondary,MDR/RR-TB treatment success (state),0.5049656226126814,0.19113574015992132,0.725131280628443,34,not pre-specified,no score: Karnataka; cohort blank or zero: Lakshadweep
+R3,sensitivity,9.1 primary,NTPS prevalence (unit),-0.23508771929824562,-0.6315882077070036,0.25888955405221653,19,negative,"not covered by the survey: Andaman and Nicobar Islands, Lakshadweep, Ladakh; member without score: Karnataka; unit dropped (no scored member): Karnataka"
+R3,sensitivity,9.2 secondary,MDR/RR-TB treatment success (state),0.47593582887700536,0.15404715087727427,0.7064944815792091,34,not pre-specified,no score: Karnataka; cohort blank or zero: Lakshadweep
