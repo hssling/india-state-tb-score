@@ -134,3 +134,43 @@ python -I verification/check_all.py
 ...
 6/8 checks passed (1 skipped)      # exit 1
 ```
+
+## Manuscript numbers (check_manuscript_numbers.py)
+
+Run on 17 November 2026 on a scratch copy of the repository (not the repository itself); the
+real `manuscript/manuscript.md` was never edited (MD5 identical before and after). The
+unmutated copy passes (53 expected strings, 8 in the abstract, 0 problems). Each of the 92
+numeric tokens in the Abstract (22) and Results (70) prose, excluding table rows and
+reference superscripts, was changed once, one at a time, by adding 1 to its last digit
+(9 becomes 0). A change counts as caught only if the checker exits 1 with a `MISSING` or
+`UNACCOUNTED` line (not a crash).
+
+| Class of token | Mutated | Caught |
+|---|---|---|
+| Values (counts, percentages, coefficients, intervals, limits) | 56 | 55 |
+| Labels: study years (2019-2026), `21` of "2019–21", Q1–Q4, R1–R3, indicator numbers, Table, Figure and Web table numbers | 36 | 0 |
+| **All** | **92** | **55** |
+
+Not caught (37):
+
+- 36 label tokens. These are masked by design (the ALLOW patterns in the checker's
+  docstring): a label is not a value derived from the code, so changing "Table II" to
+  "Table III", "indicator 4" to "indicator 5" or "2023" to "2024" is not detected. Cross-
+  references and years need reading, or a separate label check.
+- 1 value: the Results sentence "0.82–0.93" changed to "0.83–0.93". The abstract still
+  carries the correct "0.82–0.93", so the required string is present, and 0.83 is itself
+  a catalogue value of the same form (elsewhere in the study), so the changed number is
+  masked rather than unaccounted.
+
+Known limits of the check:
+
+1. **Masking is by value, not by label.** Any number equal to some catalogue value is
+   accepted wherever it occurs. A swap to another catalogue value of the same form passes
+   (for example "n = 19" changed to "n = 34" in the Results prose, where 34 is a catalogue
+   count and the Abstract still carries "n = 19"; confirmed on the scratch copy: exit 0,
+   no problem reported). The REQUIRED strings give coverage only where the label's own
+   string is missing from the whole text.
+2. **Numbers written as words** ("two indicators", "nine indicators", "four questions",
+   "one in five") are not checked.
+3. Table rows are checked by the separate rendering test (`tables.md` equals a fresh
+   rendering of `outputs/`), not by the prose scan.
