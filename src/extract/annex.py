@@ -486,17 +486,24 @@ SOURCE_CHOICE_COLS = ["score_year", "indicator", "component", "table_id", "pdf_p
                       "column_header_verbatim", "rule_from_plan", "note"]
 
 
-def merge_source_choices(path: Path, score_year: int, rows: list[dict]) -> None:
+def _year_key(y: str) -> tuple:
+    """Numeric score years first, descending; then tags ("ntps") by name."""
+    return (0, -int(y), "") if y.isdigit() else (1, 0, y)
+
+
+def merge_source_choices(path: Path, score_year: int | str, rows: list[dict]) -> None:
     """Replace `score_year`'s rows in data/source_choices.csv, keeping the
-    other years' rows; years are kept in descending order."""
+    other years' rows; years are kept in descending order, followed by
+    non-year tags such as "ntps" (the prevalence survey)."""
+    key = str(score_year)
     old: list[dict] = []
     if path.exists():
         with open(path, encoding="utf-8", newline="") as f:
-            old = [r for r in csv.DictReader(f) if r["score_year"] != str(score_year)]
+            old = [r for r in csv.DictReader(f) if r["score_year"] != key]
     new = [{k: _fmt(r[k]) for k in SOURCE_CHOICE_COLS} for r in rows]
-    years = sorted({int(r["score_year"]) for r in old} | {score_year}, reverse=True)
-    merged = [r for y in years for r in (new if y == score_year else
-                                         [o for o in old if o["score_year"] == str(y)])]
+    years = sorted({r["score_year"] for r in old} | {key}, key=_year_key)
+    merged = [r for y in years for r in (new if y == key else
+                                         [o for o in old if o["score_year"] == y])]
     write_csv(path, SOURCE_CHOICE_COLS, merged)
 
 

@@ -1,0 +1,2 @@
+unit,prevalence,ci_low,ci_high,n_positive,n_screened,measure_verbatim,source_file,pdf_page,table_id
+India,316,290,342,981,322480,"Prevalence of microbiologically confirmed pulmonary TB among population aged ≥ 15 years in India (per 100 000 population) by gender, age group and states: Robust standard errors model with imputation and inverse probability weighting",data_raw/icmr_ntps/NTPS_2019_21_report.pdf,90,Table 20
