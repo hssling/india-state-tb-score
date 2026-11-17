@@ -200,7 +200,7 @@ def test_committed_csvs_match_extraction(tmp_path):
                       tmp_path / "q1_target_check.txt")
     for name in ("itr2024_scores.csv", "itr2024_indicators.csv",
                  "itr2024_drtb_outcomes.csv", "itr2024_tsr_cohort.csv",
-                 "itr2024_population.csv"):
+                 "itr2024_population.csv", "itr2024_outcomes_context.csv"):
         assert (tmp_path / "extracted" / name).read_text(encoding="utf-8") == \
             (EXTRACTED / name).read_text(encoding="utf-8"), name
     # data/source_choices.csv and definitions.csv also hold other years' rows
@@ -226,3 +226,12 @@ def test_source_choices_cover_every_indicator():
     for i in range(1, 10):
         comps = {r["component"] for r in rows if r["indicator"] == str(i)}
         assert {"numerator", "denominator"} <= comps, i
+
+
+@needs_pdf
+def test_outcome_context_columns_sum_to_the_india_row():
+    t = itr2024.extract_tables(PDF)["a3_3"]
+    checked = {name: (tot, nat) for name, tot, nat, _ in itr2024.check_national(t)}
+    assert checked["died"] == (85231, 85231)
+    assert checked["lost_to_follow_up"] == (48604, 48604)
+    assert t.rows["Goa"]["died"] == 171 and t.rows["Goa"]["lost_to_follow_up"] == 87

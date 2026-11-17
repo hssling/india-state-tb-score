@@ -163,6 +163,9 @@ SPECS: dict[str, Spec] = {s.key: s for s in (
          192, (222, 223), 8, {
         "cohort_notified": Column(0, "TB patients notified"),
         "success": Column(2, "Success rate, n(%)"),
+        # plan 9.3: reported as descriptive context only (tied to treatment success)
+        "died": Column(3, "Death rate, n(%)"),
+        "lost_to_follow_up": Column(4, "Lost to follow up, n(%)"),
     }),
     Spec("a4_7", "Annexure 4.7", "4.7. PMDT case finding in 2023 - I", 230, (260, 261, 262), 12, {
         "rif_known_total": Column(
@@ -788,6 +791,18 @@ def write_all(pdf: Path, extracted: Path, choices_path: Path, check_path: Path) 
                [{"state": s, "cohort_year": 2022, **t33.rows[s], "source_file": SOURCE_FILE,
                  "pdf_page": t33.pages[s], "table_id": t33.spec.table_id}
                 for s in states.ALL])
+    # plan 9.3: deaths and loss to follow-up, 2022 cohort, as descriptive context; the
+    # national-total check of extract_table covers both columns
+    ctx_cols = ["cohort_notified", "died", "lost_to_follow_up"]
+    _write_csv(extracted / "itr2024_outcomes_context.csv",
+               ["state", "cohort_year", *ctx_cols, "source_file", "pdf_page", "table_id"],
+               [{"state": s, "cohort_year": 2022, **{c: t33.rows[s][c] for c in ctx_cols},
+                 "source_file": SOURCE_FILE, "pdf_page": t33.pages[s],
+                 "table_id": t33.spec.table_id} for s in states.ALL]
+               + [{"state": t33.spec.national_label, "cohort_year": 2022,
+                   **{c: t33.national[c] for c in ctx_cols}, "source_file": SOURCE_FILE,
+                   "pdf_page": ";".join(map(str, t33.spec.pages)),
+                   "table_id": t33.spec.table_id}])
     pop_rows, _ = population_rows(tables)
     _write_csv(extracted / "itr2024_population.csv",
                ["state", "notified", "rate_per_100k", "population",

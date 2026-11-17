@@ -239,3 +239,13 @@ def test_versions_are_read_from_environment_md(tmp_path):
     w = cmn.catalogue(ROOT)
     assert w["methods.python"] == f"Python {env['Python']}"
     assert w["methods.pdfplumber"] == f"pdfplumber {env['pdfplumber']}"
+
+
+# ---- fix round 2: deaths and loss to follow-up as descriptive context (plan 9.3) -------
+def test_outcome_context_strings_are_derived_and_required():
+    w = cmn.catalogue(ROOT)
+    assert w["ctx.died.national"] == "85,231 of 2,360,036 (3.6%)"
+    assert w["ctx.ltfu.national"] == "48,604 (2.1%)"
+    assert w["ctx.died.states"] == "median 3.8% (range 0.0%–8.6%)"
+    assert w["ctx.ltfu.states"] == "median 2.1% (range 0.0%–7.5%)"
+    assert {"ctx.died.national", "ctx.ltfu.states"} <= set(cmn.want(ROOT))

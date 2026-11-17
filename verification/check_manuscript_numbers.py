@@ -45,6 +45,7 @@ import fnmatch
 import importlib.util
 import json
 import math
+import statistics
 import re
 import sys
 from pathlib import Path
@@ -427,6 +428,20 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     w["q2.fifth_size"] = f"{count(fifth_size(n2))} states in each fifth"
     w.update(figure_constants(root))
 
+    # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
+    ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
+    nat = next(r for r in ctx if r["state"] == "INDIA")
+    st = [r for r in ctx if r["state"] != "INDIA" and int(r["cohort_notified"]) > 0]
+    n_nat = int(nat["cohort_notified"])
+    for col, key in (("died", "died"), ("lost_to_follow_up", "ltfu")):
+        k = int(nat[col])
+        shares = [int(r[col]) / int(r["cohort_notified"]) for r in st]
+        w[f"ctx.{key}.national"] = (k_of_n_pct(k, n_nat) if key == "died"
+                                    else f"{count(k)} ({pct(k, n_nat)})")
+        w[f"ctx.{key}.states"] = (f"median {pct(statistics.median(shares), 1)} (range "
+                                  f"{rng(pct(min(shares), 1), pct(max(shares), 1))})")
+    w["ctx.n_states"] = f"{count(len(st))} states and union territories"
+
     # ---- Methods constants: from the code where it holds them, else from the plan
     from src.q1_reproduce import TOL
     from src.q2_robust import N_DRAWS, SAT_LEVEL, SEED, SETTINGS
@@ -479,6 +494,8 @@ REQUIRED = [
     # Q4 and the disclosures of the Discussion
     "q4.R2.all.exceeds", "q4.R2.all.rho_n", "q4.R2.no1.rho_ci", "q4.R1.no1.rho_context",
     "q4.excluded", "q4.se0_counts", "q4.se0_cause", "q4.ind4_error.*",
+    # plan 9.3: deaths and loss to follow-up, reported descriptively
+    "ctx.*",
     # Methods constants. The seed value is not printed in the blinded text (it can be
     # searched for in the deposited code), so methods.seed is not required.
     "methods.total_points", "methods.udst", "methods.udst_se", "methods.r2_cap",
