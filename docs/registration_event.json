@@ -1,0 +1,23 @@
+{
+ "source": "GitHub REST API, GET /repos/hssling/india-state-tb-score/events (gh api --paginate), retrieved 2026-11-17",
+ "registration_commit": "999da8b01fa28444090f00680659a9b367452f3d",
+ "note": "The first push created branch main (CreateEvent, 2026-11-16T19:06:51Z; GitHub records no commit SHA for a branch creation). The next push (PushEvent, 2026-11-16T19:07:29Z) moved main from before = the registration commit to head 30a2a33, so main pointed to the registration commit when that push arrived. The repository pushed_at recorded in plan section 13 is 2026-11-16T19:06:50Z. Only the event type, time, repository, ref and commit SHAs are kept.",
+ "events": [
+  {
+   "type": "CreateEvent",
+   "created_at": "2026-11-16T19:06:51Z",
+   "repo": "hssling/india-state-tb-score",
+   "ref": "refs/heads/main",
+   "ref_type": "branch"
+  },
+  {
+   "type": "PushEvent",
+   "created_at": "2026-11-16T19:07:29Z",
+   "repo": "hssling/india-state-tb-score",
+   "ref": "refs/heads/main",
+   "before": "999da8b01fa28444090f00680659a9b367452f3d",
+   "head": "30a2a339098bcd5410c98eaf94cf53785d12179a",
+   "commits": []
+  }
+ ]
+}
