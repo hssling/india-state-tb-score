@@ -53,6 +53,7 @@ DP = {
     "score": 2,  # State TB Score points, residuals, violations, thresholds
     "rho": 2,  # Spearman rho and its interval
     "pct": 1,  # percentages
+    "pct_small": 3,  # small relative differences (target check, population check)
     "change": 2,  # score changes (points)
 }
 
@@ -147,8 +148,15 @@ def target_check(root: Path) -> dict:
         "expected": int(grab(r"INDIA row: (\d+)$")),
         "target": int(grab(r"Total\): (\d+)$")),
         "difference": int(grab(r"Difference \(expected - target\): (-?\d+)$")),
+        "tolerance": grab(r"^Tolerance: \|difference\| <= (\d+(?:\.\d+)?%) of the target"),
         "verdict": grab(r"^Verdict: (\w+)$"),
     }
+
+
+def target_relative(root: Path) -> str:
+    """The one string for the plan 5.3 relative difference, used by text and tables."""
+    tc = target_check(root)
+    return pct(tc["difference"], tc["target"], DP["pct_small"])
 
 
 def source_note(root: Path, year: str, indicator: str, component: str) -> str:
@@ -186,7 +194,7 @@ def population_check(root: Path) -> dict:
     india = next(float(r["population"]) for r in rows if r["state"] == "INDIA")
     total = sum(states)
     return {"n_units": len(states), "sum": round(total), "india": round(india),
-            "diff_pct": num(100 * (total - india) / india, 3) + "%"}
+            "diff_pct": num(100 * (total - india) / india, DP["pct_small"]) + "%"}
 
 
 def q3_excluded(summary_excluded: str) -> dict[str, list[str]]:
@@ -227,7 +235,8 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     w["q1.target.expected"] = count(tc["expected"])
     w["q1.target.target"] = count(tc["target"])
     w["q1.target.difference"] = count(tc["difference"])
-    w["q1.target.relative"] = pct(tc["difference"], tc["target"], 2)
+    w["q1.target.relative"] = target_relative(root)
+    w["q1.target.tolerance"] = tc["tolerance"]
 
     # ---- indicator 3 contrast (data/extracted + data/source_choices.csv)
     c3 = indicator3_contrast(root)
@@ -350,8 +359,9 @@ NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 
 def _token(s: str) -> re.Pattern:
-    """s as a whole token: not inside a longer number."""
-    return re.compile(r"(?<![\d.,])" + re.escape(s) + r"(?![\d]|[.,]\d)")
+    """s as a whole token: not inside a longer number and not after a minus sign or hyphen
+    (so "−0.48" does not satisfy "0.48": a sign flip is a changed number)."""
+    return re.compile(r"(?<![\d.,−-])" + re.escape(s) + r"(?![\d]|[.,]\d)")
 
 
 def missing(text: str, wants: dict[str, str]) -> list[tuple[str, str]]:

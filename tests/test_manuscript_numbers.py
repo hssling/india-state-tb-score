@@ -128,3 +128,12 @@ def test_stale_tables_detected(tmp_path):
     assert cmn.stale_tables(tmp_path) is None
     (ms / "tables.md").write_text("old", encoding="utf-8")
     assert "stale" in cmn.stale_tables(tmp_path)
+
+
+def test_sign_flip_is_caught():
+    want = "0.48 (95% CI 0.16\u20130.71)"
+    for sign in ("\u2212", "-"):
+        flipped = f"Rho was {sign}{want}."
+        assert cmn.missing(flipped, {"a": want}) == [("a", want)]
+        assert cmn.unaccounted(flipped, {"a": want}) != []
+    assert cmn.missing(f"Rho was {want}.", {"a": want}) == []
