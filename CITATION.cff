@@ -21,6 +21,7 @@ license: MIT
 repository-code: "https://github.com/hssling/india-state-tb-score"
 version: "v1.0.0"
 date-released: "2026-11-18"
+doi: "10.5281/zenodo.24323627"
 keywords:
   - tuberculosis
   - India
