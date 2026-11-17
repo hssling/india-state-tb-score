@@ -15,6 +15,13 @@ treatment success (success / cohort_n, annexure 4.13); a blank or zero
 cohort is excluded and listed. The 9.2 score-year-2020 analysis is not
 possible (plan 13, item 7).
 
+7.3 unrescaled check: for each rule the unrescaled partial score is checked
+(ValueError otherwise) to give the same state ranks, unit ranks and 9.1 and
+9.2 rho as the rescaled score, and a note row records it in the summary.
+Each unit row also lists the states its survey label names but the survey
+did not cover (members_not_covered), read from the unit's abbreviation
+expansion in ntps_units.csv.
+
 Every interval: Fisher z with Fieller's variance, SE = sqrt(1.06/(n-3)),
 tanh(atanh(rho) +/- 1.96 SE); none if n <= 3. No P values (plan 9.4).
 
@@ -24,6 +31,7 @@ import csv
 import json
 import math
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,11 +40,15 @@ if ROOT not in sys.path:
 
 from src import score as sc  # noqa: E402
 from src import states  # noqa: E402
-from src.q2_robust import spearman  # noqa: E402
+from src.extract.ntps import members_of  # noqa: E402
+from src.q2_robust import average_ranks, spearman  # noqa: E402
 
 Z975 = 1.96
 FIELLER = 1.06
 POPULATION_CSV = "itr2024_population.csv"  # plan 3: one population, 2024 edition
+UNRESCALED_NOTE = ("§7.3 unrescaled check: rank-identical to the rescaled score "
+                   "(constant factor); all §9 measures unchanged")
+_EXPANSION = re.compile(r"^Members from the list of abbreviations \(PDF p\. \d+\): '([^']+)'\.")
 
 
 def fieller_se(n):
@@ -101,6 +113,38 @@ def unit_scores(units, scores, population):
     return out
 
 
+def listed_members(note, abbrev):
+    """States named by the unit's survey label: the quoted abbreviation
+    expansion at the start of its ntps_units.csv note, via ntps.members_of."""
+    m = _EXPANSION.match(note)
+    if not m or not m.group(1).startswith(abbrev + " "):
+        raise ValueError(f"no '{abbrev} ...' expansion in note {note[:80]!r}")
+    return members_of(m.group(1)[len(abbrev) + 1:])
+
+
+def members_not_covered(unit, not_covered):
+    """Listed members of the unit that the survey did not cover. The listed
+    members minus these must equal unit["members"] (ValueError otherwise)."""
+    listed = listed_members(unit["note"], unit["unit_abbrev"])
+    out = [s for s in listed if s in not_covered]
+    if [s for s in listed if s not in not_covered] != list(unit["members"]):
+        raise ValueError(f"{unit['unit']}: label lists {listed}, members {unit['members']}")
+    return out
+
+
+def unrescaled_check(rescaled, unrescaled, units, population, prevalence):
+    """§7.3: the unrescaled score must give the same state ranks, unit ranks
+    and unit-level rho as the rescaled one; ValueError otherwise."""
+    if average_ranks(rescaled) != average_ranks(unrescaled):
+        raise ValueError("unrescaled state rank differs from the rescaled")
+    ur = {u["unit"]: u["score"] for u in unit_scores(units, rescaled, population)}
+    uu = {u["unit"]: u["score"] for u in unit_scores(units, unrescaled, population)}
+    if average_ranks(ur) != average_ranks(uu):
+        raise ValueError("unrescaled unit rank differs from the rescaled")
+    if spearman_ci(ur, prevalence) != spearman_ci(uu, prevalence):
+        raise ValueError("unrescaled rank: unit rho differs from the rescaled")
+
+
 # ---- run -------------------------------------------------------------------
 
 def _cell(v):
@@ -119,7 +163,8 @@ def load_inputs(ext):
     units = [{"unit": r["unit"], "unit_type": r["unit_type"],
               "members": r["member_states"].split(";"),
               "prevalence": float(r["prevalence"]),
-              "ci_low": float(r["ci_low"]), "ci_high": float(r["ci_high"])}
+              "ci_low": float(r["ci_low"]), "ci_high": float(r["ci_high"]),
+              "note": r["note"], "unit_abbrev": r["unit_abbrev"]}
              for r in sc.load(os.path.join(ext, "ntps_units.csv"))]
     not_covered = [r["state"] for r in sc.load(os.path.join(ext, "ntps_not_covered.csv"))]
     members = [m for u in units for m in u["members"]]
@@ -128,6 +173,8 @@ def load_inputs(ext):
     states.require_all(members + not_covered, 2023)  # every unit accounted for once
     if set(members) & set(not_covered):
         raise ValueError("a not-covered state is also a unit member")
+    for u in units:
+        u["not_covered"] = members_not_covered(u, not_covered)
     pop = {r["state"]: float(r["population"])
            for r in sc.load(os.path.join(ext, POPULATION_CSV)) if r["state"] != "INDIA"}
     states.require_all(pop, 2023)
@@ -184,11 +231,14 @@ def main(argv):
         role = "primary" if rule in primary else "sensitivity"
         st = sc.score(ach, rule, indicators=inds, rescale=True)
         us = unit_scores(units, st, pop)
+        unres = sc.score(ach, rule, indicators=inds)  # §7.3 unrescaled check
+        unrescaled_check(st, unres, units, pop, {u["unit"]: u["prevalence"] for u in units})
         for u, res in zip(units, us):
             unit_out.append({
                 "rule": rule, "role": role, "unit": u["unit"], "unit_type": u["unit_type"],
                 "members_scored": ";".join(res["scored"]),
                 "members_excluded": ";".join(res["excluded"]),
+                "members_not_covered": ";".join(u["not_covered"]),
                 "unit_score": res["score"], "dropped": int(res["score"] is None),
                 "prevalence": u["prevalence"], "ci_low": u["ci_low"], "ci_high": u["ci_high"]})
         x = {r["unit"]: r["score"] for r in us}
@@ -203,31 +253,42 @@ def main(argv):
             excl.append(f"unit dropped (no scored member): {', '.join(dropped)}")
         summary.append({"rule": rule, "role": role, "analysis": "9.1 primary",
                         "measure": "NTPS prevalence (unit)", "rho": rho, "lo": lo, "hi": hi,
-                        "n": n, "expected_direction": "negative", "excluded": "; ".join(excl)})
+                        "n": n, "expected_direction": "negative", "excluded": "; ".join(excl),
+                        "note": ""})
 
         sec = secondary_rows(st, drtb)
+        sec_u = secondary_rows(unres, drtb)
+        pair = lambda rows: ({r["state"]: r["score"] for r in rows if r["included"]},  # noqa: E731
+                             {r["state"]: r["success_rate"] for r in rows if r["included"]})
+        if spearman_ci(*pair(sec)) != spearman_ci(*pair(sec_u)):
+            raise ValueError(f"{rule}: unrescaled rank: secondary rho differs")
         sec_out += [{"rule": rule, "role": role, **r} for r in sec]
-        rho, lo, hi, n = spearman_ci(
-            {r["state"]: r["score"] for r in sec if r["included"]},
-            {r["state"]: r["success_rate"] for r in sec if r["included"]})
+        rho, lo, hi, n = spearman_ci(*pair(sec))
         excl = [f"{r['excluded_reason']}: {r['state']}" for r in sec if not r["included"]]
         summary.append({"rule": rule, "role": role, "analysis": "9.2 secondary",
                         "measure": "MDR/RR-TB treatment success (state)", "rho": rho,
                         "lo": lo, "hi": hi, "n": n, "expected_direction": "not pre-specified",
-                        "excluded": "; ".join(excl)})
+                        "excluded": "; ".join(excl), "note": ""})
+        summary.append({"rule": rule, "role": role, "analysis": "7.3 unrescaled check",
+                        "measure": "", "rho": None, "lo": None, "hi": None, "n": None,
+                        "expected_direction": "", "excluded": "", "note": UNRESCALED_NOTE})
 
     _write(os.path.join(out_dir, f"q3_{year}_units.csv"),
            ["rule", "role", "unit", "unit_type", "members_scored", "members_excluded",
-            "unit_score", "dropped", "prevalence", "ci_low", "ci_high"], unit_out)
+            "members_not_covered", "unit_score", "dropped", "prevalence", "ci_low",
+            "ci_high"], unit_out)
     _write(os.path.join(out_dir, f"q3_{year}_summary.csv"),
            ["rule", "role", "analysis", "measure", "rho", "lo", "hi", "n",
-            "expected_direction", "excluded"], summary)
+            "expected_direction", "excluded", "note"], summary)
     _write(os.path.join(out_dir, f"q3_{year}_secondary_states.csv"),
            ["rule", "role", "state", "score", "cohort_n", "success", "success_rate",
             "included", "excluded_reason"], sec_out)
 
     print(f"Q3 validity, score year {year} (rescaled partial over indicators {inds})")
     for r in summary:
+        if r["rho"] is None and r["note"]:
+            print(f"  {r['rule']} ({r['role']}) {r['note']}")
+            continue
         ci = "no interval" if r["lo"] is None else f"{r['lo']:.3f} to {r['hi']:.3f}"
         rho = "NA" if r["rho"] is None else f"{r['rho']:.3f}"
         print(f"  {r['rule']} ({r['role']}) {r['analysis']}: rho {rho} ({ci}), n {r['n']}")

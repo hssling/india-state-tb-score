@@ -3,7 +3,8 @@ import math
 
 import pytest
 
-from src.q3_validity import fieller_se, fisher_ci, spearman_ci, unit_scores
+from src.q3_validity import (fieller_se, fisher_ci, listed_members, members_not_covered,
+                             spearman_ci, unit_scores, unrescaled_check)
 
 
 def test_spearman_known_values():
@@ -87,3 +88,44 @@ def test_scored_member_without_population_fails_loudly():
     units = [{"unit": "G", "members": ["A", "B"]}]
     with pytest.raises(ValueError, match="B"):
         unit_scores(units, {"A": 1.0, "B": 2.0}, {"A": 1.0})
+
+
+NOTE_TN = ("Members from the list of abbreviations (PDF p. 11): 'TN,PY,AN Tamil Nadu, "
+           "Pondicherry, Andaman & Nicobar'. Linked to this Table 20 row through annexure "
+           "9.2 (PDF p. 144), whose row 'TN, PY,AN' prints the same P, N.")
+
+
+def test_listed_members_from_unit_note():
+    assert listed_members(NOTE_TN, "TN,PY,AN") == [
+        "Tamil Nadu", "Puducherry", "Andaman and Nicobar Islands"]
+    with pytest.raises(ValueError):
+        listed_members("no quoted expansion here", "TN,PY,AN")
+
+
+def test_members_not_covered_per_unit():
+    unit = {"unit": "Tamil Nadu", "members": ["Tamil Nadu", "Puducherry"],
+            "note": NOTE_TN, "unit_abbrev": "TN,PY,AN"}
+    nc = ["Andaman and Nicobar Islands", "Lakshadweep", "Ladakh"]
+    assert members_not_covered(unit, nc) == ["Andaman and Nicobar Islands"]
+    # listed minus not covered must equal the unit's members
+    bad = dict(unit, members=["Tamil Nadu"])
+    with pytest.raises(ValueError, match="Tamil Nadu"):
+        members_not_covered(bad, nc)
+
+
+def test_unrescaled_check_passes_on_constant_factor():
+    units = [{"unit": "G", "members": ["A", "B"]}, {"unit": "C", "members": ["C"]},
+             {"unit": "D", "members": ["D"]}, {"unit": "E", "members": ["E"]}]
+    pop = {"A": 2.0, "B": 1.0, "C": 1.0, "D": 1.0, "E": 1.0}
+    resc = {"A": 80.0, "B": 50.0, "C": 70.0, "D": 20.0, "E": None}
+    unres = {k: (None if v is None else 0.85 * v) for k, v in resc.items()}
+    prev = {"G": 300.0, "C": 200.0, "D": 100.0, "E": 50.0}
+    unrescaled_check(resc, unres, units, pop, prev)  # no error
+
+
+def test_unrescaled_check_fails_on_rank_change():
+    units = [{"unit": "C", "members": ["C"]}, {"unit": "D", "members": ["D"]}]
+    pop = {"C": 1.0, "D": 1.0}
+    with pytest.raises(ValueError, match="rank"):
+        unrescaled_check({"C": 1.0, "D": 2.0}, {"C": 2.0, "D": 1.0}, units, pop,
+                         {"C": 1.0, "D": 2.0})
