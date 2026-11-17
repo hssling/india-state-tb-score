@@ -154,17 +154,17 @@ a reviewed edit of the text. R4 is the pre-specified threshold-band rule that th
 could not be tested, so R1-R4 are valid.
 
 The harness, `verification/mutate_manuscript.py` (fixture tests: `tests/test_mutation_harness.py`),
-changes each of the 321 number tokens and Table numerals of those five sections one at a
+changes each of the 326 number tokens and Table numerals of those five sections one at a
 time, in memory, on a copy of `manuscript/manuscript.md` (the file is never written), and
 runs the whole checker on each copy. Two kinds: `inc` (last digit plus one; a Roman
 numeral to the next) and `swap` (the token replaced by the next different token of the
-same section, a value of the right form). Run on 17 November 2026 on the real manuscript:
+same section, a value of the right form). Run on 18 November 2026 on the real manuscript:
 
 | Mutation kind | Tokens | Caught |
 |---|---|---|
-| inc | 321 | 321 |
-| swap | 321 | 321 |
-| **All** | **642** | **642** |
+| inc | 326 | 326 |
+| swap | 326 | 326 |
+| **All** | **652** | **652** |
 
 Layers without the skeleton (to show what each layer adds; measured on the earlier text of 305 tokens, 610 changes): the value
 and phrase layers alone catch 170 of 305 `inc` and 206 of 305 `swap` changes. What
