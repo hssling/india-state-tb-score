@@ -99,6 +99,7 @@ def test_skips_when_manuscript_md_absent(tmp_path, capsys):
 def _fake_repo(tmp_path):
     for d in ("outputs", "data", "docs"):
         shutil.copytree(ROOT / d, tmp_path / d)
+    shutil.copy(ROOT / "ENVIRONMENT.md", tmp_path / "ENVIRONMENT.md")
     (tmp_path / "manuscript").mkdir()
     return tmp_path
 
@@ -208,3 +209,33 @@ def test_methods_constants_are_derived():
     assert w["methods.n_deviations"] == "seven dated deviations"
     assert w["q4.ind4_error.counts"] == "21 successful outcomes against 14 net notified patients"
     assert w["q4.se0_counts"] == "3 states in 2022 and 2 in 2023"
+    assert w["methods.udst_se"] == "divided by 0.7"
+    assert w["methods.r2_cap"] == "more than its 10 points"
+    assert w["q3.clusters"] == "443 of 625 planned clusters"
+    assert w["q2.fifth_size"] == "7 states in each fifth"
+    assert w["q4.R1.no1.rho_context"] == "−0.30 under R1"
+    assert "methods.seed" not in cmn.want(ROOT)  # not printed in the blinded text
+
+
+
+
+# ---- fix round 1: figure legends are scanned; versions come from ENVIRONMENT.md -------
+def test_figure_legends_are_scanned_but_references_and_tables_are_not():
+    text = ("Intro 2023.\n## References\n1. Smith. J. 2020;12:34.\n## Tables\n"
+            "Footnote: 99 units.\n| 7 | 8 |\n## Legends to Figures\n"
+            "**Figure 1.** One point per state (n = 41).\n| 5 |\n")
+    assert cmn.unaccounted(text, {}) == ["41"]
+    assert cmn.unaccounted(text, {"n": "n = 41"}) == []
+
+
+def test_versions_are_read_from_environment_md(tmp_path):
+    (tmp_path / "ENVIRONMENT.md").write_text("# Env\n\n- Python 3.99.1\n- pdfplumber 9.8.7\n",
+                                             encoding="utf-8")
+    assert cmn.environment(tmp_path) == {"Python": "3.99.1", "pdfplumber": "9.8.7"}
+    (tmp_path / "ENVIRONMENT.md").write_text("- Python 3.99.1\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        cmn.environment(tmp_path)
+    env = cmn.environment(ROOT)
+    w = cmn.catalogue(ROOT)
+    assert w["methods.python"] == f"Python {env['Python']}"
+    assert w["methods.pdfplumber"] == f"pdfplumber {env['pdfplumber']}"

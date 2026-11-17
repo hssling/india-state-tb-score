@@ -44,7 +44,8 @@ URLs and verify each against the SHA-256 digest recorded in the plan.
 
 Python 3.11 or later. Analysis code uses the standard library only;
 `pdfplumber` is needed for the extraction scripts and `pytest` for the tests.
-Run everything from the repository root.
+The committed outputs were produced with the versions pinned in
+[`ENVIRONMENT.md`](ENVIRONMENT.md). Run everything from the repository root.
 
 ```
 # 1. Fetch the source PDFs into data_raw/ and verify their SHA-256 digests

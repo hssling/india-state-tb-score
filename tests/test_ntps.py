@@ -131,7 +131,8 @@ def test_national_estimate_kept_apart():
 @needs_pdf
 def test_committed_csvs_match_extraction(tmp_path):
     ntps.write_all(PDF, tmp_path / "extracted", tmp_path / "source_choices.csv")
-    for name in ("ntps_units.csv", "ntps_not_covered.csv", "ntps_national.csv"):
+    for name in ("ntps_units.csv", "ntps_not_covered.csv", "ntps_national.csv",
+                 "ntps_cluster_coverage.csv"):
         assert (tmp_path / "extracted" / name).read_text(encoding="utf-8") == \
             (EXTRACTED / name).read_text(encoding="utf-8"), name
     mine = [r for r in _read(tmp_path / "source_choices.csv") if r["score_year"] == "ntps"]
@@ -147,3 +148,23 @@ def test_source_choices_ntps_rows():
     assert prev["column_header_verbatim"] == (
         "Robust standard errors model with imputation and inverse probability weighting")
     assert "§9.1" in prev["rule_from_plan"]
+
+
+@needs_pdf
+def test_cluster_coverage_counts_and_total():
+    rows = {r["state"]: r for r in ntps.cluster_coverage(PDF)}
+    assert rows["INDIA"]["clusters_completed"] == 443 and rows["INDIA"]["clusters_planned"] == 625
+    assert sum(r["clusters_completed"] for s, r in rows.items() if s != "INDIA") == 443
+    no_cluster = {s for s, r in rows.items() if s != "INDIA" and r["clusters_completed"] == 0}
+    # survey group members with no completed cluster, plus the three units not covered
+    assert no_cluster == {"Goa", "Puducherry", "Dadra and Nagar Haveli and Daman and Diu",
+                          "Sikkim", "Mizoram", "Tripura", "Andaman and Nicobar Islands",
+                          "Lakshadweep", "Ladakh"}
+    assert rows["Chhattisgarh"]["clusters_completed"] == 13  # printed 'Chhatisgarh'
+
+
+def test_cluster_state_reads_the_leading_name():
+    assert ntps._cluster_state("Tamil Nadu Thiruvallur Chinnamandalai Rural 1099") == "Tamil Nadu"
+    assert ntps._cluster_state("Chhatisgarh Raipur Mudpar Rural 1089") == "Chhattisgarh"
+    with pytest.raises(ValueError):
+        ntps._cluster_state("Atlantis Somewhere Rural 1")

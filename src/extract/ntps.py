@@ -16,9 +16,16 @@ is listed as not covered.
 
 No correlation is computed and no score is joined (Q3 is Task 9).
 
+Cluster coverage: annexure 9.1 ("Details of completed clusters", PDF pp. 129-142)
+lists every completed cluster with its state; the clusters are counted for each
+canonical State/UT, checked against the serial numbers (1 to the printed total, no
+gap) and against section 5.2 (PDF p. 59: "The survey covered 443 out of the 625
+clusters"). A member State/UT with no completed cluster contributes no survey data
+to its state group's estimate.
+
 Run: python -I src/extract/ntps.py
-Writes data/extracted/ntps_{units,not_covered,national}.csv and the "ntps"
-rows of data/source_choices.csv (other rows are kept).
+Writes data/extracted/ntps_{units,not_covered,national,cluster_coverage}.csv and the
+"ntps" rows of data/source_choices.csv (other rows are kept).
 """
 from __future__ import annotations
 
@@ -45,6 +52,11 @@ ABBREV_PAGES = (10, 11, 12)
 DESIGN_PAGE = 23
 BEST_PAGES = (90, 93)
 N_UNITS = 20  # "The country was grouped into 20 State groups" (p. 23)
+CLUSTER_PAGES = tuple(range(129, 143))  # annexure 9.1, "Details of completed clusters"
+COVERAGE_PAGE = 59  # section 5.2, "Coverage of the Clusters"
+_COVERAGE = re.compile(r"The survey covered (\d+) out of the (\d+) clusters")
+_CLUSTER_ROW = re.compile(r"^(\d{1,3}) (\d{1,3}) (\d{1,2}) (.+)$")  # S.No, cluster, team, rest
+CLUSTER_SPELLINGS = {"Chhatisgarh": "Chhattisgarh"}  # as printed in annexure 9.1
 
 HEADER = "Robust standard errors model with imputation and inverse probability weighting"
 _HEADER_LINES = ("P N Crude Prevalence Robust standard errors", "model with imputation",
@@ -351,6 +363,57 @@ def _extract(pdf: str) -> dict:
             "abbreviations": {u["unit_abbrev"]: ab[u["unit_abbrev"]] for u in units}}
 
 
+def _cluster_state(rest: str) -> str:
+    """Canonical State/UT at the start of an annexure 9.1 row (longest name first)."""
+    toks = rest.split()
+    for i in range(min(9, len(toks)), 0, -1):
+        name = " ".join(toks[:i])
+        try:
+            return states.canonical(CLUSTER_SPELLINGS.get(name, name))
+        except KeyError:
+            continue
+    raise ValueError(f"annexure 9.1: no State/UT at the start of {rest!r}")
+
+
+def cluster_coverage(pdf: Path = PDF) -> list[dict]:
+    """Completed clusters per canonical State/UT (annexure 9.1), with the printed total."""
+    m = _COVERAGE.search(_text(str(pdf), COVERAGE_PAGE))
+    if not m:
+        raise ValueError(f"PDF p. {COVERAGE_PAGE}: cluster coverage sentence not found")
+    covered, planned = int(m.group(1)), int(m.group(2))
+    rows: dict[int, tuple[str, int]] = {}
+    for page in CLUSTER_PAGES:
+        for ln in _lines(str(pdf), page):
+            r = _CLUSTER_ROW.match(ln)
+            if r:
+                sno = int(r.group(1))
+                if sno in rows:
+                    raise ValueError(f"annexure 9.1: serial number {sno} repeated")
+                rows[sno] = (_cluster_state(r.group(4)), page)
+    if sorted(rows) != list(range(1, covered + 1)):
+        raise ValueError(f"annexure 9.1: serial numbers are not 1..{covered} "
+                         f"(found {len(rows)} rows)")
+    out = []
+    pages_all = f"{CLUSTER_PAGES[0]}-{CLUSTER_PAGES[-1]}"
+    for st in states.ALL:
+        pages = sorted({pg for s, pg in rows.values() if s == st})
+        n = sum(1 for s, _ in rows.values() if s == st)
+        out.append({"state": st, "clusters_completed": n, "clusters_planned": "",
+                    "source_file": SOURCE_FILE,
+                    "pdf_page": ";".join(map(str, pages)) if pages else pages_all,
+                    "table_id": "Annexure 9.1",
+                    "note": ("" if n else "No completed cluster listed in annexure 9.1.")})
+    if sum(r["clusters_completed"] for r in out) != covered:
+        raise ValueError("annexure 9.1: clusters by State/UT do not sum to the printed total")
+    out.append({"state": "INDIA", "clusters_completed": covered, "clusters_planned": planned,
+                "source_file": SOURCE_FILE, "pdf_page": str(COVERAGE_PAGE),
+                "table_id": "Section 5.2",
+                "note": (f"'The survey covered {covered} out of the {planned} clusters' "
+                         f"(PDF p. {COVERAGE_PAGE}); annexure 9.1 serial numbers run 1-{covered} "
+                         f"without a gap.")})
+    return out
+
+
 def extract(pdf: Path = PDF) -> dict:
     """Units, not-covered States/UTs and the national row (fails loudly)."""
     return _extract(str(pdf))
@@ -362,6 +425,8 @@ UNIT_COLS = ["unit", "unit_type", "member_states", "prevalence", "ci_low", "ci_h
              "n_positive", "n_screened", "measure_verbatim", "source_file", "pdf_page",
              "table_id", "unit_abbrev", "membership_pages", "note"]
 NOT_COVERED_COLS = ["state", "reason", "source_file", "pdf_page", "note"]
+COVERAGE_COLS = ["state", "clusters_completed", "clusters_planned", "source_file", "pdf_page",
+                 "table_id", "note"]
 NATIONAL_COLS = ["unit", "prevalence", "ci_low", "ci_high", "n_positive", "n_screened",
                  "measure_verbatim", "source_file", "pdf_page", "table_id"]
 
@@ -419,6 +484,7 @@ def write_all(pdf: Path, extracted: Path, choices_path: Path) -> dict:
                     [u | {"member_states": ";".join(u["member_states"])} for u in res["units"]])
     annex.write_csv(extracted / "ntps_not_covered.csv", NOT_COVERED_COLS, res["not_covered"])
     annex.write_csv(extracted / "ntps_national.csv", NATIONAL_COLS, [res["national"]])
+    annex.write_csv(extracted / "ntps_cluster_coverage.csv", COVERAGE_COLS, cluster_coverage(pdf))
     annex.merge_source_choices(choices_path, TAG, source_choices(res))
     return res
 

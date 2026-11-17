@@ -42,11 +42,9 @@ from __future__ import annotations
 
 import csv
 import fnmatch
-import importlib.metadata
 import importlib.util
 import json
 import math
-import platform
 import re
 import sys
 from pathlib import Path
@@ -264,6 +262,31 @@ def q3_measure(root: Path) -> dict:
     return {"age": int(age.group(1)), "per": int(per.group(1) + per.group(2))}
 
 
+def environment(root: Path) -> dict[str, str]:
+    """Software versions pinned in ENVIRONMENT.md ('- Python 3.14.0', '- pdfplumber 0.11.8')."""
+    text = (root / "ENVIRONMENT.md").read_text(encoding="utf-8")
+    out = dict(re.findall(r"^- (Python|pdfplumber) (\d+(?:\.\d+)+)\s*$", text, re.M))
+    if set(out) != {"Python", "pdfplumber"}:
+        raise ValueError("ENVIRONMENT.md: Python and pdfplumber versions not both pinned")
+    return out
+
+
+def figure_constants(root: Path) -> dict[str, str]:
+    """Figure 3's dodge of near-coincident error bars, read from make_figures.py (local
+    and git-ignored, like the manuscript); empty if the script is absent."""
+    script = root / "manuscript" / "make_figures.py"
+    if not script.exists():
+        return {}
+    src = script.read_text(encoding="utf-8")
+    gap = re.search(r"^DODGE_GAP = (\d+(?:\.\d+)?)", src, re.M)
+    pt = re.search(r"^DODGE_PT = (\d+(?:\.\d+)?)", src, re.M)
+    if not (gap and pt):
+        raise ValueError("make_figures.py: DODGE_GAP or DODGE_PT not found")
+    apart = 2 * float(pt.group(1))  # each bar of a pair moves DODGE_PT points
+    return {"fig3.dodge_gap": f"less than {gap.group(1)} points apart",
+            "fig3.dodge_pt": f"{rank(apart)} pt apart"}
+
+
 def q3_excluded(summary_excluded: str) -> dict[str, list[str]]:
     """Parse 'not covered by the survey: A, B; member without score: C; ...'."""
     out: dict[str, list[str]] = {}
@@ -369,7 +392,9 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
         w[key + ".exceeds"] = k_of_n_pct(int(r["n_exceeds"]), int(r["n_compared"]))
         w[key + ".rho_ci"] = rho_ci(float(r["rho"]), float(r["rho_lo"]), float(r["rho_hi"]))
         w[key + ".rho_n"] = n_eq(int(r["rho_n"]))
+        w[key + ".rho_context"] = f"{rho(float(r['rho']))} under {r['rule']}"
         if r["rule"] == sel["chosen"] and iset == "all":
+            w["q4.n_states"] = f"{count(int(r['n_compared']))} states and union territories"
             w["q4.excluded"] = r["excluded"].split(" (")[0]
             w["q4.se0_2022"] = count(int(r["n_states_se0_2022"]))
             w["q4.se0_2023"] = count(int(r["n_states_se0_2023"]))
@@ -390,6 +415,17 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     m = q3_measure(root)
     w["q3.age"] = f"{count(m['age'])} years"
     w["q3.per"] = f"per {count(m['per'])}"
+    w["q3.age_short"] = f"≥{count(m['age'])} y"  # tables and figures abbreviate years (IJMR)
+    w["q3.units_analysed_reporting"] = f"{count(len(kept))} reporting units"
+    cov = read_csv(root / "data" / "extracted" / "ntps_cluster_coverage.csv")
+    india = next(r for r in cov if r["state"] == "INDIA")
+    w["q3.clusters"] = (f"{count(int(india['clusters_completed']))} of "
+                        f"{count(int(india['clusters_planned']))} planned clusters")
+    from src.q2_robust import fifth_size
+    n2 = next(int(r["n_compared"]) for r in read_csv(root / "outputs" / "q2_2023_summary.csv")
+              if r["rule"] == sel["chosen"] and r["variant"] == "base")
+    w["q2.fifth_size"] = f"{count(fifth_size(n2))} states in each fifth"
+    w.update(figure_constants(root))
 
     # ---- Methods constants: from the code where it holds them, else from the plan
     from src.q1_reproduce import TOL
@@ -400,6 +436,10 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     pf = plan_facts(root)
     w["methods.total_points"] = f"{count(sum(POINTS.values()))} points"
     w["methods.udst"] = pct(UDST_BENCHMARK, 1, 0) + " of net notified patients"
+    w["methods.udst_se"] = f"divided by {UDST_BENCHMARK}"  # plan 10.2: indicator 3 se
+    # plan 7.2: under R2 an expenditure ratio above 1 would give indicator 7 more than
+    # its maximum points
+    w["methods.r2_cap"] = f"more than its {count(POINTS[7])} points"
     w["methods.tolerance"] = f"{num(TOL, 2)} points"
     w["methods.draws"] = f"{count(N_DRAWS)} draws"
     w["methods.seed"] = f"seed {SEED}"
@@ -415,8 +455,9 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     w["methods.sat_level"] = num(SAT_LEVEL, 2)
     w["methods.registration"] = pf["registration"]
     w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated deviations"
-    w["methods.python"] = f"Python {platform.python_version()}"
-    w["methods.pdfplumber"] = f"pdfplumber {importlib.metadata.version('pdfplumber')}"
+    env = environment(root)
+    w["methods.python"] = f"Python {env['Python']}"
+    w["methods.pdfplumber"] = f"pdfplumber {env['pdfplumber']}"
     return w
 
 
@@ -424,22 +465,27 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
 # catalogue may appear (it is accounted for in the number scan) but is not required,
 # because IJMR forbids repeating table and figure data in the text.
 REQUIRED = [
-    # Q1
+    # Q1 (one primary number per question in Results; the rest are in the exhibits)
     "q1.verdict", "q1.n_published", "q1.missing_indicators", "q1.missing_points",
     "q1.available_points", "q1.excluded", "q1.R2.in_band", "q1.R2.max_violation",
-    "ind3.annexure_counts", "ind3.annexure_share", "ind3.table11_1_share",
+    "ind3.annexure_share", "ind3.table11_1_share",
     "pop.diff",
     # Q2
     "q2.R2.1_weights.c63.spearman_range",
     # Q3
-    "q3.R2.primary.rho_ci", "q3.R2.primary.n", "q3.R2.secondary.rho_ci", "q3.R2.secondary.n",
+    "q3.R2.primary.rho_ci", "q3.R2.primary.n",
     "q3.units_printed", "q3.units_analysed", "q3.states_covered", "q3.not_covered",
-    "q3.age", "q3.per",
+    "q3.age", "q3.per", "q3.clusters",
     # Q4 and the disclosures of the Discussion
-    "q4.R2.all.exceeds", "q4.R2.all.rho_ci", "q4.R2.all.rho_n", "q4.R2.no1.exceeds",
+    "q4.R2.all.exceeds", "q4.R2.all.rho_n", "q4.R2.no1.rho_ci", "q4.R1.no1.rho_context",
     "q4.excluded", "q4.se0_counts", "q4.se0_cause", "q4.ind4_error.*",
-    # Methods constants
-    "methods.*",
+    # Methods constants. The seed value is not printed in the blinded text (it can be
+    # searched for in the deposited code), so methods.seed is not required.
+    "methods.total_points", "methods.udst", "methods.udst_se", "methods.r2_cap",
+    "methods.tolerance", "methods.draws", "methods.c", "methods.alpha", "methods.z",
+    "methods.ci_level", "methods.central_draws", "methods.fieller", "methods.sat_share",
+    "methods.sat_level", "methods.registration", "methods.n_deviations", "methods.python",
+    "methods.pdfplumber",
 ]
 
 # Headline numbers that the abstract itself must carry (checked inside the abstract).
@@ -507,12 +553,17 @@ def missing(text: str, wants: dict[str, str]) -> list[tuple[str, str]]:
 
 
 def prose(text: str) -> str:
-    """The text that is scanned for numbers: no table rows, nothing from References on."""
-    out = []
+    """The text that is scanned for numbers: everything before the References heading,
+    and the Legends to Figures section, without table rows. The references (citation
+    data) and the tables (rendered from outputs/, checked by stale_tables and
+    tables_not_inserted) are not scanned."""
+    out, scan = [], True
     for ln in text.splitlines():
         if re.match(r"^#+\s*References\b", ln.strip()):
-            break
-        if not ln.lstrip().startswith("|"):
+            scan = False
+        elif re.match(r"^#+\s*Legends to Figures\b", ln.strip()):
+            scan = True
+        if scan and not ln.lstrip().startswith("|"):
             out.append(ln)
     return "\n".join(out)
 
