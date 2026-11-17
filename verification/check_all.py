@@ -23,6 +23,7 @@ STEPS = [
     ("q2_robust 2023", PY + ["src/q2_robust.py", "2023"]),
     ("q3_validity 2023", PY + ["src/q3_validity.py", "2023"]),
     ("q4_change", PY + ["src/q4_change.py"]),
+    ("explore_udst (exploratory)", PY + ["src/explore_udst.py"]),
 ]
 CHECKS = [
     ("check_extraction_totals", PY + ["verification/check_extraction_totals.py"]),

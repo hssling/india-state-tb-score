@@ -1,4 +1,4 @@
-"""The analyses (Q1-Q4) run on the committed extracted data
+"""The analyses (Q1-Q4 and the exploratory script) run on the committed extracted data
 with the standard library only: importing them must not import pdfplumber (plan §11)."""
 import subprocess
 import sys
@@ -23,7 +23,8 @@ assert "pdfplumber" not in sys.modules
 print("ok")
 """
 
-MODULES = ["src.q1_reproduce", "src.q2_robust", "src.q3_validity", "src.q4_change"]
+MODULES = ["src.q1_reproduce", "src.q2_robust", "src.q3_validity", "src.q4_change",
+           "src.explore_udst"]
 
 
 def test_analyses_import_without_pdfplumber():
