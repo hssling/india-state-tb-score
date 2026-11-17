@@ -14,7 +14,7 @@ States/UTs. Section 2.1 (PDF p. 23) excludes Andaman & Nicobar and
 Lakshadweep from the survey. Ladakh is not named anywhere in the report and
 is listed as not covered.
 
-No correlation is computed and no score is joined (Q3 is Task 9).
+No correlation is computed and no score is joined here (see src/q3_validity.py).
 
 Cluster coverage: annexure 9.1 ("Details of completed clusters", PDF pp. 129-142)
 lists every completed cluster with its state; the clusters are counted for each
@@ -76,7 +76,7 @@ BEST_QUOTES = (
          "are given in the figure 20."),
 )
 # Verbatim phrases of the abbreviation list that name one canonical unit.
-PHRASES = {"Dadra, Nagar Haveli, Daman, Diu": "Dadra and Nagar Haveli and Daman and Diu"}
+PHRASES = states.GROUP_PHRASES
 
 _EST = r"(\d+)\s*\(\s*(\d+)\s*-\s*(\d+)\s*\)"
 
@@ -137,15 +137,9 @@ def parse_abbreviations(lines: list[str]) -> dict[str, str]:
     return out
 
 
-def members_of(expansion: str) -> list[str]:
-    """Canonical States/UTs named by an abbreviation's expansion. A group name
-    followed by a parenthesised list ('North Eastern States (...)') is the
-    list. KeyError for any part that is not a State/UT."""
-    m = re.fullmatch(r"[^()]*\((.*)\)", expansion)
-    text = m.group(1) if m else expansion
-    for phrase, name in PHRASES.items():
-        text = text.replace(phrase, name)
-    return [states.canonical(p) for p in re.split(r",\s*|\s+And\s+", text) if p.strip()]
+# The expansion parser is a pure string helper, kept in src/states.py so that the
+# analyses can use it without pdfplumber; the extractor uses the same function.
+members_of = states.members_of
 
 
 # ---- the report ------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""Task 7: Q2 robustness (analysis plan 8).
+"""Q2 robustness (analysis plan 8).
 
 Usage: python -I src/q2_robust.py <score_year>
 
@@ -220,8 +220,8 @@ def main(argv):
 
     sat = saturation_table(ach)
     sat_inds = [i for i in inds if sat[i][1]]
-    with open(os.path.join(out_dir, f"q2_{year}_saturation.csv"), "w", newline="") as f:
-        w = csv.writer(f)
+    with open(os.path.join(out_dir, f"q2_{year}_saturation.csv"), "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["indicator", "n_computable", "share_ge_0.95", "saturated"])
         for i in inds:
             n = sum(1 for a in ach.values() if a.get(i) is not None)
@@ -317,15 +317,15 @@ def main(argv):
                                                bot_ct[s] / N_DRAWS if s in bot_set
                                                else None)})
 
-    with open(os.path.join(out_dir, f"q2_{year}_summary.csv"), "w", newline="") as f:
-        w = csv.writer(f)
+    with open(os.path.join(out_dir, f"q2_{year}_summary.csv"), "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(cols)
         for r in summary:
             w.writerow([_cell(r.get(c)) for c in cols])
     fcols = ["state", "rule", "setting", "base_fifth", "share_top_fifth",
              "share_bottom_fifth", "share_stays"]
-    with open(os.path.join(out_dir, f"q2_{year}_fifths.csv"), "w", newline="") as f:
-        w = csv.writer(f)
+    with open(os.path.join(out_dir, f"q2_{year}_fifths.csv"), "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(fcols)
         for r in fifths:
             w.writerow([_cell(r[c]) for c in fcols])

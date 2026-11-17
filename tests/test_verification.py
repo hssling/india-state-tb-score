@@ -96,3 +96,18 @@ def test_deviations_accepts_logged_label(tmp_path):
 def test_deviations_entry_must_name_the_file(tmp_path):
     _plan_and_outputs(tmp_path, PLAN13, {"other.csv": "exploratory\n"})
     assert len(check_deviations.problems(tmp_path)[0]) == 1
+
+
+def test_plan_order_skips_without_git(tmp_path, capsys):
+    """A release archive has no .git: the history check is skipped, not failed."""
+    _plan_and_outputs(tmp_path, PLAN, {})
+    assert check_plan_order.main(tmp_path) == 0
+    out = capsys.readouterr().out.strip()
+    assert out.startswith("SKIPPED: not a git checkout")
+
+
+def test_check_all_detects_a_git_checkout(tmp_path):
+    from verification import check_all
+    assert not check_all.is_git_checkout(tmp_path)
+    (tmp_path / ".git").mkdir()
+    assert check_all.is_git_checkout(tmp_path)

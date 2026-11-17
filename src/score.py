@@ -1,4 +1,4 @@
-"""Task 5: indicator achievement and scoring rules R1-R3 (analysis plan 5.2, 6).
+"""Indicator achievement and scoring rules R1-R3 (analysis plan 5.2, 6).
 
 R4 (threshold bands) is not implemented: ITR2024 states no bands (plan 6.1).
 """

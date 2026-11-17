@@ -1,4 +1,4 @@
-"""Task 6: Q1 reconstruction and rule selection (analysis plan 7.1-7.3).
+"""Q1 reconstruction and rule selection (analysis plan 7.1-7.3).
 
 Usage: python -I src/q1_reproduce.py <score_year>
 
@@ -195,7 +195,7 @@ def main(argv):
     os.makedirs(out_dir, exist_ok=True)
     csv_path = os.path.join(out_dir, f"q1_{year}.csv")
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["score_year", "state", "rule", "published", "partial",
                     "rescaled_partial", "residual", "in_band", "violation", "excluded"])
         for s in sorted(res["per_state"]):
@@ -210,7 +210,7 @@ def main(argv):
                             "" if in_band is None else int(in_band),
                             _fmt(viol), int(e["excluded"])])
     json_path = os.path.join(out_dir, f"q1_{year}_selection.json")
-    with open(json_path, "w", encoding="utf-8") as f:
+    with open(json_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(res, f, indent=2, sort_keys=True)
 
     print(f"Q1 {year} verdict: {res['verdict']}")

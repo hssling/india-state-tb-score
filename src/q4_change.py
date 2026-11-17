@@ -1,4 +1,4 @@
-"""Task 9b: Q4 change over time, score years 2022 and 2023 (analysis plan 10).
+"""Q4 change over time, score years 2022 and 2023 (analysis plan 10).
 
 Usage: python -I src/q4_change.py
 

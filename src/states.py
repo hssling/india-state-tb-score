@@ -83,6 +83,26 @@ def require_all(names: Iterable[str], year: int) -> None:
             f"year {year}: missing units {missing}; extra units {extra}")
 
 
+# Verbatim phrases of the prevalence survey's list of abbreviations that name one
+# canonical unit.
+GROUP_PHRASES: dict[str, str] = {
+    "Dadra, Nagar Haveli, Daman, Diu": "Dadra and Nagar Haveli and Daman and Diu",
+}
+
+
+def members_of(expansion: str) -> list[str]:
+    """Canonical States/UTs named by a survey abbreviation's expansion. A group name
+    followed by a parenthesised list ('North Eastern States (...)') is the list.
+    KeyError for any part that is not a State/UT.
+
+    A pure string helper: the analyses use it without the PDF extraction libraries."""
+    m = re.fullmatch(r"[^()]*\((.*)\)", expansion)
+    text = m.group(1) if m else expansion
+    for phrase, name in GROUP_PHRASES.items():
+        text = text.replace(phrase, name)
+    return [canonical(p) for p in re.split(r",\s*|\s+And\s+", text) if p.strip()]
+
+
 # "#" starts a spreadsheet error value (#N/A, #DIV/0!) that CTD prints in
 # blank cells.
 _NUMLIKE = re.compile(r"^(?:[\d*(#]|NA$|-$)", re.I)

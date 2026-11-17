@@ -4,8 +4,10 @@ Run as: python -I verification/check_all.py   (steps run from the repo root)
 
 Steps run as `python -I ...` subprocesses. After the analyses, `git status --porcelain`
 on the generated outputs and extracted data must be empty, i.e. every committed output
-is reproduced byte for byte. Prints "N/N checks passed" (skipped steps are counted
-separately); exits 1 on any failure.
+is reproduced byte for byte. In a copy without .git (a release archive), that step and
+check_plan_order print "SKIPPED: not a git checkout ..." and are counted as skipped: clone
+the repository to verify the history and the byte reproduction. Prints "N/N checks
+passed" (skipped steps are counted separately); exits 1 on any failure.
 """
 import subprocess
 import sys
@@ -29,6 +31,15 @@ CHECKS = [
     ("check_manuscript_numbers", PY + ["verification/check_manuscript_numbers.py"]),
     ("check_docx_tie", PY + ["verification/check_docx_tie.py"]),
 ]
+
+
+NOT_GIT = ("SKIPPED: not a git checkout (clone the repository to verify history and byte "
+           "reproduction)")
+
+
+def is_git_checkout(root: Path) -> bool:
+    """True if root is a git working tree (a release archive has no .git)."""
+    return (root / ".git").exists()
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -65,14 +76,18 @@ def main() -> int:
         go(name, cmd)
 
     label = "byte-for-byte reproduction of outputs/ and data/"
-    st = run(["git", "status", "--porcelain", "--", *REPRODUCED])
-    if st.returncode != 0 or st.stdout.strip():
-        tally["failed"] += 1
-        report(label, "FAIL", tail(st.stdout or st.stderr)
-               + "\n    (files differ from the committed versions)")
+    if not is_git_checkout(ROOT):
+        tally["skipped"] += 1
+        report(label, "SKIP", "    " + NOT_GIT)
     else:
-        tally["passed"] += 1
-        report(label, "ok")
+        st = run(["git", "status", "--porcelain", "--", *REPRODUCED])
+        if st.returncode != 0 or st.stdout.strip():
+            tally["failed"] += 1
+            report(label, "FAIL", tail(st.stdout or st.stderr)
+                   + "\n    (files differ from the committed versions)")
+        else:
+            tally["passed"] += 1
+            report(label, "ok")
 
     for name, cmd in CHECKS:
         go(name, cmd)

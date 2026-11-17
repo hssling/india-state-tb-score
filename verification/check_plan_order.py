@@ -6,13 +6,16 @@ Run as: python -I verification/check_plan_order.py
 2. Every commit touching src/, data/extracted/ or outputs/ is a strict descendant of it.
 3. The plan's text before the "## 13. Deviations" heading is identical at the
    registration commit and at HEAD (later edits may only touch section 13).
+
+In a copy without .git (a release archive) the history cannot be checked: this prints
+"SKIPPED: not a git checkout ..." and exits 0, and check_all counts the step as skipped.
 """
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRATION = "999da8b"
+REGISTRATION = "999da8b01fa28444090f00680659a9b367452f3d"
 GUARDED = ("src", "data/extracted", "outputs")
 PLAN = "docs/analysis_plan.md"
 HEADING = "## 13. Deviations"
@@ -59,14 +62,21 @@ def problems(repo: Path = ROOT, registration: str = REGISTRATION,
     return out
 
 
-def main() -> int:
-    bad = problems()
+NOT_GIT = ("SKIPPED: not a git checkout (clone the repository to verify history and byte "
+           "reproduction)")
+
+
+def main(root: Path = ROOT) -> int:
+    if not (root / ".git").exists():
+        print(NOT_GIT)
+        return 0
+    bad = problems(root)
     if bad:
         for b in bad:
             print(f"FAIL: {b}")
         return 1
-    n = len(git(ROOT, "log", "--format=%H", f"{REGISTRATION}..HEAD").stdout.split())
-    print(f"OK: {REGISTRATION} is an ancestor of HEAD; no src/data/outputs commit precedes it; "
+    n = len(git(root, "log", "--format=%H", f"{REGISTRATION}..HEAD").stdout.split())
+    print(f"OK: {REGISTRATION[:7]} is an ancestor of HEAD; no src/data/outputs commit precedes it; "
           f"plan text before section 13 unchanged across {n} later commits")
     return 0
 

@@ -1,4 +1,4 @@
-"""Task 9a: Q3 validity (analysis plan 9).
+"""Q3 validity (analysis plan 9).
 
 Usage: python -I src/q3_validity.py 2023
 
@@ -40,7 +40,7 @@ if ROOT not in sys.path:
 
 from src import score as sc  # noqa: E402
 from src import states  # noqa: E402
-from src.extract.ntps import members_of  # noqa: E402
+from src.states import members_of  # noqa: E402
 from src.q2_robust import average_ranks, spearman  # noqa: E402
 
 Z975 = 1.96
@@ -115,7 +115,7 @@ def unit_scores(units, scores, population):
 
 def listed_members(note, abbrev):
     """States named by the unit's survey label: the quoted abbreviation
-    expansion at the start of its ntps_units.csv note, via ntps.members_of."""
+    expansion at the start of its ntps_units.csv note, via states.members_of."""
     m = _EXPANSION.match(note)
     if not m or not m.group(1).startswith(abbrev + " "):
         raise ValueError(f"no '{abbrev} ...' expansion in note {note[:80]!r}")

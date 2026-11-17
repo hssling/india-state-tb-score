@@ -455,7 +455,7 @@ def target_check(pdf: Path = PDF, out: Path | None = None) -> dict:
             f"Tolerance: |difference| <= 0.1% of the target = {TOLERANCE * target:.3f}",
             f"Verdict: {verdict}",
             "",
-        ]), encoding="utf-8")
+        ]), encoding="utf-8", newline="\n")
     return res
 
 
@@ -704,8 +704,8 @@ def source_choices(check: dict, tables: dict[str, Table], udst_kpi_pct: int) -> 
          "data/extracted/itr2024_population.csv."),
         ("scoring_rule_R4", "bands", "not stated", "123;124;175", "", "§6.1; §5.4 item 7",
          "ITR2024 states no threshold bands for the score (chapter 11 text and Table 11.2 "
-         "PDF 123; Box 11.1 PDF 124; Table 16.3 PDF 175). Other CTD documents not searched "
-         "in this task."),
+         "PDF 123; Box 11.1 PDF 124; Table 16.3 PDF 175). Other CTD documents were not "
+         "searched."),
     ]
     cols = ("indicator", "component", "table_id", "pdf_pages", "column_header_verbatim",
             "rule_from_plan", "note")
