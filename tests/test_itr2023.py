@@ -89,7 +89,7 @@ def test_each_table_matches_printed_total():
             vals = [r[col] for r in t.rows.values() if r[col] is not None]
             assert sum(vals) == t.national[col], (key, col)
     rows, totals = itr2023.build_indicators(tables)
-    assert set(totals) == {1, 2, 3, 4, 5, 6}
+    assert set(totals) == {1, 2, 3, 4, 6}
     for ind, (num_total, den_total) in totals.items():
         mine = [r for r in rows if r["indicator"] == ind]
         assert sum(r["numerator"] for r in mine if r["numerator"] is not None) == num_total, ind
@@ -118,7 +118,9 @@ def test_spot_values():
 def test_indicator_rows():
     rows, _ = itr2023.build_indicators(itr2023.extract_tables(PDF))
     present = {r["indicator"] for r in rows}
-    assert present == {1, 2, 3, 4, 5, 6}
+    # 5: no eligible-beneficiary denominator (ruling R18); 7, 9 not located; 8 fails its total
+    assert present == {1, 2, 3, 4, 6}
+    assert set(itr2023.MISSING) == {5, 7, 8, 9}
     for ind in present:
         mine = [r for r in rows if r["indicator"] == ind]
         assert len(mine) == 36, ind
@@ -132,7 +134,7 @@ def test_drtb_outcomes():
     assert len(rows) == 36
     states.require_all([r["state"] for r in rows], 2022)
     lk = next(r for r in rows if r["state"] == "Lakshadweep")  # not printed in 4.13
-    assert lk["cohort_n"] is None and lk["success"] is None and lk["pdf_page"] is None
+    assert lk["cohort_n"] is None and lk["success"] is None and lk["pdf_page"] == "293;294"
     for r in rows:
         if r["success"] is not None:
             assert r["success"] == r["cured"] + r["completed"]
@@ -179,6 +181,10 @@ def test_source_choices_cover_every_indicator_2022():
         comps = {r["component"] for r in rows if r["indicator"] == str(i)}
         assert {"numerator", "denominator"} <= comps, i
     assert {r["indicator"] for r in rows} >= {"published_score", "scoring_rule_R4"}
+    for i in ("5", "7", "9"):  # missing: no table matches the definition
+        assert {r["table_id"] for r in rows if r["indicator"] == i} <= {"missing", "not located"}
+    one = next(r for r in rows if r["indicator"] == "1" and r["component"] == "denominator")
+    assert "§5.3 could not be run" in one["note"] and "§13 deviation" in one["note"]
 
 
 def test_definitions_csv_has_each_edition():

@@ -138,14 +138,13 @@ def split_name(line: str) -> tuple[list[str], str]:
 
 
 def _norm(s: str) -> str:
-    return states._norm(s)  # same normalisation as the canonical lookup
+    return states.normalize(s)  # same normalisation as the canonical lookup
 
 
 @lru_cache(maxsize=None)
 def _unit_keys(year: int) -> dict[str, str]:
     """Normalised spelling -> canonical name, for the units valid in `year`."""
-    valid = set(states.ALL if year >= 2020 else states._PRE2020)
-    return {k: v for k, v in states._LOOKUP.items() if v in valid}
+    return states.spellings(year)
 
 
 def _complete(name: str, year: int) -> str | None:
@@ -422,7 +421,7 @@ def extract_table(doc: Doc, spec: Spec, pages: tuple[int, ...], year: int,
             if any(c.n is None or c.pct is not None for c in lead):
                 raise ValueError(f"{spec.table_id} {s}: leading cells not bare counts: "
                                  f"{[c.raw for c in lead]}")
-    order = states.ALL if year >= 2020 else states._PRE2020
+    order = states.units(year)
     out: dict[str, dict[str, int | None]] = {}
     blanks: dict[str, list[str]] = {c: [] for c in spec.columns}
     for s in order:

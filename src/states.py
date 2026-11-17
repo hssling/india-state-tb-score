@@ -54,9 +54,27 @@ def canonical(name: str) -> str:
         raise KeyError(f"not a known State/UT: {name!r}") from None
 
 
+def normalize(name: str) -> str:
+    """The normalisation under which spellings are matched ("&" = "and",
+    whitespace collapsed, case folded)."""
+    return _norm(name)
+
+
+def units(year: int) -> tuple[str, ...]:
+    """The canonical State/UT names valid in score year `year`, in order."""
+    return ALL if year >= 2020 else _PRE2020
+
+
+def spellings(year: int) -> dict[str, str]:
+    """Normalised spelling (canonical names and aliases) -> canonical name,
+    for the units valid in score year `year`."""
+    valid = set(units(year))
+    return {k: v for k, v in _LOOKUP.items() if v in valid}
+
+
 def require_all(names: Iterable[str], year: int) -> None:
     """Raise ValueError listing missing and extra units for score year `year`."""
-    valid = set(ALL if year >= 2020 else _PRE2020)
+    valid = set(units(year))
     got = set(names)
     missing = sorted(valid - got)
     extra = sorted(got - valid)

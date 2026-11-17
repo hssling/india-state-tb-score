@@ -299,10 +299,12 @@ SOURCES: dict[int, tuple[tuple[str, str], tuple[str, str]]] = {
     2: (("a2_1", "hiv_known_total"), ("a1_6", "net_notified")),
     3: (("a4_7", "rif_known_total"), ("a1_6", "net_notified")),
     4: (("a3_3", "success"), ("a1_6", "net_notified")),
-    5: (("a9", "paid_once"), ("a9", "notified")),
     6: (("a4_9", "mdr_initiated_total"), ("a4_7", "rr_diagnosed_total")),
 }
 MISSING = {
+    5: "5: no state-wise table with the eligible-beneficiary denominator of plan §5.1 row 5 "
+       "(annexure 9, PDF 323-324, prints payments of total notified only); missing under "
+       "§5.4 item 4 (controller ruling R18, 17 Nov 2026).",
     7: "7: no state-wise table of expenditure against the approved ROP (chapter 15, "
        "Table 15.1 Financial Performance, PDF 176, is national only; no such annexure).",
     8: "8: annexure 7.2 (PDF 303-304) fails the printed-total check in every column "
@@ -362,12 +364,20 @@ def extract_drtb_outcomes(tables: dict[str, Table]) -> tuple[list[dict], dict[st
             completed = None
         rows.append({"state": s, "cohort_year": 2020, "cohort_n": v["cohort_n"],
                      "cured": v["cured"], "completed": completed, "success": v["success"],
-                     "source_file": SOURCE_FILE, "pdf_page": t.row_pages[s],
+                     "source_file": SOURCE_FILE,
+                     "pdf_page": t.row_pages[s] or ";".join(map(str, t.pages)),
                      "table_id": t.spec.table_id})
     return rows, dict(t.national)
 
 
 # ---- source choices (plan §5.4 item 7) ---------------------------------------------
+
+# Pages without a text layer rendered and read in the bounded search for a
+# national 2022 notification target (controller ruling R19, 17 Nov 2026):
+# lists of tables/figures (21-23), executive summary (24, 25, 27), chapter 2
+# (43, 44), chapter 3B (61, 62), and Tables 15.3 and 15.5 (178, 180; these
+# two have a text layer and were also read as text). No target was found.
+R19_PAGES = (21, 22, 23, 24, 25, 27, 43, 44, 61, 62, 178, 180)
 
 def _pages(pages: dict[str, tuple[int, ...]], key: str) -> str:
     return ";".join(map(str, pages[key]))
@@ -381,7 +391,7 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
     tables = extract_tables(pdf)
     failed = printed_total_failures(pdf)
     _, pages, _ = _locate(str(pdf))
-    a12, a16, a21, a47, a9 = (tables[k] for k in ("a1_2", "a1_6", "a2_1", "a4_7", "a9"))
+    a12, a16, a21, a47 = (tables[k] for k in ("a1_2", "a1_6", "a2_1", "a4_7"))
 
     def ch(key: str, col: str) -> tuple[str, str, str]:
         return SPECS[key].table_id, _pages(pages, key), SPECS[key].columns[col].header
@@ -419,25 +429,28 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
         f"National: 1.6 sum {a16.national['net_notified']:,} vs 1.2 "
         f"{a12.national['notified_total']:,}.")
     rif_n, net_n = a47.national["rif_known_total"], a16.national["net_notified"]
-    mn = a9.rows["Manipur"]
     bad72 = failed["a7_2"]
     bad72_txt = "; ".join(f"{c}: state sum {a:,} vs INDIA {b:,}" for c, a, b in bad72)
     cols72 = len(bad72)
     target = a12.national["target_total"]
+    searched = ", ".join(map(str, R19_PAGES))
     rows = [
         (1, "numerator", *ch("a1_2", "notified_total"), "§5.1 row 1",
          "Total TB patients notified in 2022 (annexure 1.2; the PHI basis is not stated; equal "
          "state by state to annexure 9 'TOTAL NOTIFICATION', checked in code)."),
         (1, "denominator", *ch("a1_2", "target_total"), "§5.1 row 1; §5.3",
-         f"§5.3 outcome: NOT PERFORMED. The edition prints no national notification target "
-         f"outside annexure 1.2 in its text layer (searched every text page for 'target'; "
-         f"no Table 11.1-type KPI table; pages without a text layer, e.g. the list of tables "
-         f"and executive summary PDF 21-25, not searched). JUDGEMENT CALL: annexure 1.2 "
-         f"'Target' (INDIA {target:,}) is used as each state's denominator because the column "
-         f"is labelled 'Target', the same annexure prints notification as '% achievement "
+         f"§5.3 outcome: NOT PERFORMED; §5.3 could not be run, a §13 deviation (17 Nov "
+         f"2026). The edition prints no national 2022 notification target outside annexure "
+         f"1.2: none in its text layer (every text page searched for 'target'; no KPI table "
+         f"like ITR2024's Table 11.1), and none in a bounded visual search of the rendered "
+         f"pages without a text layer (controller ruling R19; PDF {searched}: list of tables "
+         f"and figures, executive summary, chapters 2 and 3B on notification, Tables 15.3 and "
+         f"15.5). Used: annexure 1.2 'Target' (INDIA {target:,}) as each state's "
+         f"denominator. The column is labelled 'Target TB patients expected to be notified', "
+         f"which begins with the words of plan §5.1 row 1's denominator 'Target TB patients "
+         f"estimated for the year'; the annexure prints notification as '% achievement "
          f"against target' on it, and Table 7.1 indicator 1 is '% of Target TB notification "
-         f"achieved'. If the plan's agreement test is required, indicator 1 is not computable "
-         f"for 2022 (§5.3) and these rows are not used."),
+         f"achieved'. Q4 additionally reports the comparison with indicator 1 excluded."),
         (2, "numerator", *ch("a2_1", "hiv_known_total"), "§5.1 row 2",
          "Count of the Total 'n (%)' cell."),
         (2, "denominator", *net, "§5.1 row 2; §5.4 item 7", net_note),
@@ -460,17 +473,15 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
         (4, "denominator_matched_cohort", *ch("a3_3", "cohort_notified"), "§8.1 item 4",
          "Q2 variant only: patients notified in 2021 whose outcomes annexure 3.3 reports. "
          "Stored in data/extracted/itr2023_tsr_cohort.csv."),
-        (5, "numerator", *ch("a9", "paid_once"), "§5.1 row 5; §5.5",
-         "Indicator 5 quantity (§5.5): 'paid at least one benefit' is the only payment count "
-         "printed and is used, following the definition; 'all benefits paid' is not printed. "
-         f"Source anomaly: Manipur prints {mn['paid_once']:,} paid of {mn['notified']:,} "
-         f"notified ({mn['paid_once'] / mn['notified']:.0%}), far below other states. "
-         "Extracted as printed; not corrected."),
-        (5, "denominator", *ch("a9", "notified"), "§5.1 row 5; §5.5",
-         "DEFINITIONAL MISMATCH (not pre-specified in §5.5): annexure 9 prints payments 'of "
-         "total notified', and no eligible-beneficiary count, whereas the definition (plan "
-         "§5.1 row 5 and this edition's Table 7.1) uses eligible beneficiaries. Its 'TOTAL "
-         "NOTIFICATION' equals annexure 1.2 notified state by state (checked in code)."),
+        (5, "numerator", "missing", _pages(pages, "a9"), "", "§5.1 row 5; §5.4 item 4; §5.5",
+         "MISSING for 2022 (controller ruling R18, 17 Nov 2026; §13). No state-wise table "
+         "matches plan §5.1 row 5's denominator, total eligible TB patients: annexure 9 "
+         "(Ni-kshay Poshan Yojana) prints 'BENEFICIARIES PAID OF AT LEAST ONE BENEFIT OF "
+         "TOTAL NOTIFIED (%)' against 'TOTAL NOTIFICATION' (equal to annexure 1.2 notified, "
+         "checked in code) and no eligible-beneficiary count. §5.4 item 4: no value is "
+         "imputed and no other denominator is substituted."),
+        (5, "denominator", "missing", _pages(pages, "a9"), "", "§5.1 row 5; §5.4 item 4",
+         "MISSING; see numerator. Annexure 9 has no eligible-beneficiary column."),
         (6, "numerator", *ch("a4_9", "mdr_initiated_total"), "§5.1 row 6",
          "Total MDR/RR-TB initiated on treatment (first column group, Total TB). This edition "
          "has no separate 'second-line' column group."),
@@ -500,8 +511,8 @@ def source_choices(pdf: Path = PDF) -> list[dict]:
          "Missing. No eligible-PLHIV count (PLHIV with active TB ruled out)."),
         ("published_score", "score", "not printed", "108", "", "§2 Q1; §7; §10.1",
          "No state scores printed in ITR2023: Table 7.2 (PDF 108, no text layer) lists only "
-         "the top-5 ranks per category for 2022. Score year 2022 is a gap for published "
-         "scores in Q4 (§10.1)."),
+         "the top-5 ranks per category for 2022. Q4 therefore compares 2022 and 2023 "
+         "re-scored under one definition only (§10.1 (b); §13)."),
         ("q3_secondary", "numerator", *ch("a4_13", "success"), "§9.2",
          "MDR/RR-TB treatment success, 2020 cohort; completed = success - cured (no "
          "'completed' column printed). data/extracted/itr2023_drtb_outcomes.csv."),
