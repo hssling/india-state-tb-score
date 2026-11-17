@@ -97,22 +97,28 @@ def test_skips_when_manuscript_md_absent(tmp_path, capsys):
 
 
 def _fake_repo(tmp_path):
-    for d in ("outputs", "data"):
+    for d in ("outputs", "data", "docs"):
         shutil.copytree(ROOT / d, tmp_path / d)
     (tmp_path / "manuscript").mkdir()
     return tmp_path
 
 
+def _text(root):
+    """A minimal manuscript: an abstract with its headline strings, then every string."""
+    abstract = "\n".join(f"- {v}" for v in cmn.want(root, cmn.ABSTRACT_REQUIRED).values())
+    body = "\n".join(f"- {v}" for v in cmn.want(root).values())
+    return f"# Title\n\n## Abstract\n\n{abstract}\n\n## Introduction\n\n{body}\n"
+
+
 def test_passes_when_text_carries_every_required_string(tmp_path):
     root = _fake_repo(tmp_path)
-    body = "\n".join(f"- {v}" for v in cmn.want(root).values())
-    (root / "manuscript" / "manuscript.md").write_text(body, encoding="utf-8")
+    (root / "manuscript" / "manuscript.md").write_text(_text(root), encoding="utf-8")
     assert cmn.main(root) == 0
 
 
 def test_fails_on_a_changed_number(tmp_path, capsys):
     root = _fake_repo(tmp_path)
-    body = "\n".join(f"- {v}" for v in cmn.want(root).values())
+    body = _text(root)
     body = body.replace("24 of 35 (68.6%)", "23 of 35 (68.6%)")
     (root / "manuscript" / "manuscript.md").write_text(body, encoding="utf-8")
     assert cmn.main(root) == 1
@@ -137,3 +143,68 @@ def test_sign_flip_is_caught():
         assert cmn.missing(flipped, {"a": want}) == [("a", want)]
         assert cmn.unaccounted(flipped, {"a": want}) != []
     assert cmn.missing(f"Rho was {want}.", {"a": want}) == []
+
+
+# ---- part b: blind spots of the number scan, the abstract, Methods constants ------------
+def test_only_study_years_are_masked():
+    assert cmn.unaccounted("In 2019–21, 2022 and 2023 (registered 2026).", {}) == []
+    # a four-digit number in the 19xx/20xx range that is not a study year is not a year
+    assert cmn.unaccounted("Of 1987 patients, 2061 were notified.", {}) == ["1987", "2061"]
+    assert cmn.unaccounted("2023.5 points", {}) == ["2023.5"]
+
+
+def test_indicator_names_do_not_swallow_the_next_number():
+    assert cmn.unaccounted("indicators 1, 2, 3, 4 and 6 and indicator 9", {}) == []
+    assert cmn.unaccounted("indicator 6, 25 of 35", {}) == ["25", "35"]
+    assert cmn.unaccounted("indicator 12", {}) == ["12"]
+    assert cmn.unaccounted("Tables I and II, Web tables 1 and 2", {}) == []
+    assert cmn.unaccounted("Table II, 36 states", {}) == ["36"]
+
+
+def test_bare_small_integers_do_not_mask_the_prose():
+    # a catalogue holding a bare "3" must not account for every 3 in the text
+    assert cmn.unaccounted("3 states", {"q": "3"}) == ["3"]
+    assert cmn.unaccounted("3 states in 2022", {"q": "3 states in 2022"}) == []
+
+
+def test_abstract_section_is_found():
+    text = "## Abstract\n\nA 1.\n\n**Keywords:** x\n\n## Introduction\n\nB 2."
+    assert "A 1." in cmn.section(text, "Abstract")
+    assert "B 2." not in cmn.section(text, "Abstract")
+    assert cmn.section(text, "Missing") == ""
+
+
+def test_headline_missing_from_the_abstract_fails(tmp_path, capsys):
+    root = _fake_repo(tmp_path)
+    body = "\n".join(f"- {v}" for v in cmn.want(root).values())
+    text = f"## Abstract\n\nNo numbers here.\n\n## Introduction\n\n{body}\n"
+    (root / "manuscript" / "manuscript.md").write_text(text, encoding="utf-8")
+    assert cmn.main(root) == 1
+    assert "MISSING in the abstract q4.R2.all.exceeds" in capsys.readouterr().out
+
+
+def test_tables_must_be_inserted_verbatim(tmp_path):
+    ms = tmp_path / "manuscript"
+    ms.mkdir()
+    (ms / "tables.md").write_text("<!-- generated -->\n| a | 1 |\n", encoding="utf-8")
+    assert cmn.tables_not_inserted(tmp_path, "text\n| a | 1 |\nmore") is None
+    assert "verbatim" in cmn.tables_not_inserted(tmp_path, "text\n| a | 2 |\n")
+
+
+def test_methods_constants_are_derived():
+    w = cmn.catalogue(ROOT)
+    assert w["methods.draws"] == "10,000 draws"
+    assert w["methods.seed"] == "seed 20261117"
+    assert w["methods.c"] == "c = 63"
+    assert w["methods.alpha"] == "α = 1"
+    assert w["methods.z"] == "1.96"
+    assert w["methods.ci_level"] == "95% confidence interval"
+    assert w["methods.sat_share"] == "80% of states"
+    assert w["methods.sat_level"] == "0.95"
+    assert w["methods.tolerance"] == "0.01 points"
+    assert w["q1.target.tolerance"] == "0.1%"
+    assert w["methods.udst"] == "70% of net notified patients"
+    assert w["methods.registration"] == "16 November 2026 at 19:06:50 UTC"
+    assert w["methods.n_deviations"] == "seven dated deviations"
+    assert w["q4.ind4_error.counts"] == "21 successful outcomes against 14 net notified patients"
+    assert w["q4.se0_counts"] == "3 states in 2022 and 2 in 2023"

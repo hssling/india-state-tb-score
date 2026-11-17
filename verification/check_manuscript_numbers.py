@@ -8,20 +8,29 @@ decision. Ruling R6: when manuscript/ is absent this prints
 check_all counts the step as skipped. It is also skipped while manuscript/ exists but
 manuscript/manuscript.md has not been written.
 
-When manuscript/manuscript.md is present, three checks run:
+When manuscript/manuscript.md is present, these checks run:
 
 1. every expected string from want() (the REQUIRED labels of the catalogue) occurs in
-   the manuscript, as a whole token (not as part of a longer number);
-2. every number in the prose is accounted for: after every catalogue string and the
-   ALLOW patterns are masked out, no digit may remain. Markdown table rows (lines
-   starting with "|", which make_tables.py generates) and everything from the
-   "References" heading on are not scanned. A changed number therefore fails twice:
-   its expected string goes missing and the changed value is unaccounted;
-3. if manuscript/make_tables.py and manuscript/tables.md exist, tables.md equals a
-   fresh rendering (so the tables are not stale against outputs/).
+   the manuscript, as a whole token (not as part of a longer number, and not after a
+   minus sign);
+2. the headline strings of ABSTRACT_REQUIRED occur inside the '## Abstract' section;
+3. every number in the prose is accounted for: after every specific catalogue string
+   (not a bare one- or two-digit integer, which would mask every such number) and the
+   ALLOW patterns are masked out, no digit may remain. ALLOW masks only the study's
+   years (2019-2026), exhibit, section, rule, question and indicator names (each digit
+   run ending at a non-digit, so "indicator 6, 25" leaves 25), reference superscripts
+   and the AI model's version. Markdown table rows (lines starting with "|", which
+   make_tables.py generates) and everything from the "References" heading on are not
+   scanned. A changed number therefore fails twice: its expected string goes missing
+   and the changed value is unaccounted;
+4. if manuscript/make_tables.py and manuscript/tables.md exist, tables.md equals a
+   fresh rendering (so the tables are not stale against outputs/), and manuscript.md
+   carries tables.md verbatim.
 
-catalogue() is a dict of label -> string, derived from outputs/ and data/ only; want()
-is its REQUIRED subset.
+catalogue() is a dict of label -> string, derived from outputs/, data/, the code's own
+constants (src/) and, for constants the code does not hold, the registered plan
+(docs/analysis_plan.md); want() is its REQUIRED subset. Software versions are read from
+the running interpreter and the installed pdfplumber.
 Number formats (decimals, the minus sign U+2212, en dash ranges, thousands
 separators) are fixed once, in the "Number formats" section below, and
 manuscript/make_tables.py imports the same helpers, so the text and the tables
@@ -33,13 +42,18 @@ from __future__ import annotations
 
 import csv
 import fnmatch
+import importlib.metadata
 import importlib.util
 import json
+import math
+import platform
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SKIP_DIR = "SKIPPED: manuscript/ not present (kept private until a decision)"
 SKIP_MS = "SKIPPED: manuscript/manuscript.md not written yet"
 
@@ -197,6 +211,59 @@ def population_check(root: Path) -> dict:
             "diff_pct": num(100 * (total - india) / india, DP["pct_small"]) + "%"}
 
 
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
+          "September", "October", "November", "December")
+WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+
+
+def plan_text(root: Path) -> str:
+    return (root / "docs" / "analysis_plan.md").read_text(encoding="utf-8")
+
+
+def plan_facts(root: Path) -> dict:
+    """Constants fixed in the registered plan that the code does not hold as a constant."""
+    text = plan_text(root)
+
+    def grab(pattern: str) -> re.Match:
+        m = re.search(pattern, text, re.M)
+        if not m:
+            raise ValueError(f"analysis_plan.md: no match for {pattern!r}")
+        return m
+
+    reg = grab(r"pushed to the public repository \S+ at (\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d:\d\d)Z")
+    y, mo, d, t = reg.groups()
+    deviations = text.split("## 13. Deviations", 1)[1]
+    n_dev = len(re.findall(r"^\d+\. \*\*", deviations, re.M))
+    return {
+        "alpha": grab(r"alpha_i = (\d+) for every i").group(1),
+        "sat_share": int(grab(r"at least (\d+)% of the states for which it is computable").group(1)),
+        "registration": f"{int(d)} {MONTHS[int(mo) - 1]} {y} at {t} UTC",
+        "n_deviations": n_dev,
+    }
+
+
+def q4_ind4_error(root: Path) -> dict:
+    """The impossible treatment-success value that excludes a state from the noise test."""
+    r = next(r for r in read_csv(root / "outputs" / "q4_2022_2023_summary.csv")
+             if r["primary"] == "1")
+    m = re.search(r"^(.+?) \(SE not computable in (\d{4}) \(indicator (\d): binomial a = "
+                  r"(\d+(?:\.\d+)?) > 1 \((\d+)/(\d+)\)\)\)$", r["excluded"])
+    if not m:
+        raise ValueError("q4 summary: excluded state not in the expected form")
+    return {"state": m.group(1), "year": m.group(2), "indicator": m.group(3),
+            "a": m.group(4), "k": int(m.group(5)), "n": int(m.group(6))}
+
+
+def q3_measure(root: Path) -> dict:
+    """Age bound and population base of the survey measure, read from the printed label."""
+    u = read_csv(root / "data" / "extracted" / "ntps_units.csv")[0]["measure_verbatim"]
+    age = re.search(r"aged ≥ (\d+) years", u)
+    per = re.search(r"per (\d+) (\d{3}) population", u)
+    if not (age and per):
+        raise ValueError("ntps_units.csv: measure label not in the expected form")
+    return {"age": int(age.group(1)), "per": int(per.group(1) + per.group(2))}
+
+
 def q3_excluded(summary_excluded: str) -> dict[str, list[str]]:
     """Parse 'not covered by the survey: A, B; member without score: C; ...'."""
     out: dict[str, list[str]] = {}
@@ -306,23 +373,81 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
             w["q4.excluded"] = r["excluded"].split(" (")[0]
             w["q4.se0_2022"] = count(int(r["n_states_se0_2022"]))
             w["q4.se0_2023"] = count(int(r["n_states_se0_2023"]))
+            # in context, so that the check never masks a bare "3" or "2" elsewhere
+            w["q4.se0_counts"] = (f"{count(int(r['n_states_se0_2022']))} states in 2022 and "
+                                  f"{count(int(r['n_states_se0_2023']))} in 2023")
+    err = q4_ind4_error(root)
+    w["q4.ind4_error.counts"] = (f"{count(err['k'])} successful outcomes against "
+                                 f"{count(err['n'])} net notified patients")
+    w["q4.ind4_error.a"] = f"achievement of {err['a']}"
+    # a binomial indicator at full achievement has se = 0 (plan 10.2)
+    w["q4.se0_cause"] = f"{pct(1, 1, 0)} on a binomial indicator"
+
+    # ---- headline phrasing of values that the tables give bare
+    sat_top = max(sat, key=lambda r: float(r["share_ge_0.95"]))
+    k_top = round(float(sat_top["share_ge_0.95"]) * int(sat_top["n_computable"]))
+    w["q2.max_share_ge_0.95.k_of_n"] = k_of_n_pct(k_top, int(sat_top["n_computable"]))
+    m = q3_measure(root)
+    w["q3.age"] = f"{count(m['age'])} years"
+    w["q3.per"] = f"per {count(m['per'])}"
+
+    # ---- Methods constants: from the code where it holds them, else from the plan
+    from src.q1_reproduce import TOL
+    from src.q2_robust import N_DRAWS, SAT_LEVEL, SEED, SETTINGS
+    from src.q3_validity import FIELLER
+    from src.q4_change import Z975
+    from src.score import POINTS, UDST_BENCHMARK
+    pf = plan_facts(root)
+    w["methods.total_points"] = f"{count(sum(POINTS.values()))} points"
+    w["methods.udst"] = pct(UDST_BENCHMARK, 1, 0) + " of net notified patients"
+    w["methods.tolerance"] = f"{num(TOL, 2)} points"
+    w["methods.draws"] = f"{count(N_DRAWS)} draws"
+    w["methods.seed"] = f"seed {SEED}"
+    c = next(v for k, v in SETTINGS if v is not None)
+    w["methods.c"] = f"c = {count(int(c))}"
+    w["methods.alpha"] = f"α = {pf['alpha']}"
+    w["methods.z"] = num(Z975, 2)
+    level = math.erf(Z975 / math.sqrt(2))  # two-sided coverage of ±Z975
+    w["methods.ci_level"] = f"{num(100 * level, 0)}% confidence interval"
+    w["methods.central_draws"] = f"central {num(100 * level, 0)}% of draws"
+    w["methods.fieller"] = f"{num(FIELLER, 2)} ÷ (n − 3)"  # plan 9.1: SE = sqrt(1.06 / (n - 3))
+    w["methods.sat_share"] = f"{pf['sat_share']}% of states"
+    w["methods.sat_level"] = num(SAT_LEVEL, 2)
+    w["methods.registration"] = pf["registration"]
+    w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated deviations"
+    w["methods.python"] = f"Python {platform.python_version()}"
+    w["methods.pdfplumber"] = f"pdfplumber {importlib.metadata.version('pdfplumber')}"
     return w
 
 
 # Labels (fnmatch patterns) whose strings MUST appear in the manuscript. The rest of the
 # catalogue may appear (it is accounted for in the number scan) but is not required,
-# because IJMR forbids repeating table and figure data in the text. Part b edits this
-# list as the prose takes shape.
+# because IJMR forbids repeating table and figure data in the text.
 REQUIRED = [
+    # Q1
     "q1.verdict", "q1.n_published", "q1.missing_indicators", "q1.missing_points",
-    "q1.excluded", "q1.R2.in_band", "q1.R2.max_violation",
-    "ind3.annexure_share", "ind3.table11_1_share",
+    "q1.available_points", "q1.excluded", "q1.R2.in_band", "q1.R2.max_violation",
+    "ind3.annexure_counts", "ind3.annexure_share", "ind3.table11_1_share",
     "pop.diff",
+    # Q2
     "q2.R2.1_weights.c63.spearman_range",
+    # Q3
     "q3.R2.primary.rho_ci", "q3.R2.primary.n", "q3.R2.secondary.rho_ci", "q3.R2.secondary.n",
-    "q3.units_analysed", "q3.states_covered", "q3.not_covered",
+    "q3.units_printed", "q3.units_analysed", "q3.states_covered", "q3.not_covered",
+    "q3.age", "q3.per",
+    # Q4 and the disclosures of the Discussion
     "q4.R2.all.exceeds", "q4.R2.all.rho_ci", "q4.R2.all.rho_n", "q4.R2.no1.exceeds",
-    "q4.excluded",
+    "q4.excluded", "q4.se0_counts", "q4.se0_cause", "q4.ind4_error.*",
+    # Methods constants
+    "methods.*",
+]
+
+# Headline numbers that the abstract itself must carry (checked inside the abstract).
+ABSTRACT_REQUIRED = [
+    "q1.missing_points", "q1.R2.in_band", "q1.R2.max_violation", "q1.verdict",
+    "q2.R2.1_weights.c63.spearman_range",
+    "q3.R2.primary.rho_ci", "q3.R2.primary.n",
+    "q4.R2.all.exceeds",
 ]
 
 
@@ -341,19 +466,24 @@ def want(root: Path = ROOT, required: list[str] = REQUIRED) -> dict[str, str]:
 # --------------------------------------------------------------------------------------
 # Checks
 # --------------------------------------------------------------------------------------
-# Numbers in the prose that are not results: years, section and exhibit numbers,
-# confidence levels, reference superscripts. Part b extends this list deliberately;
-# each entry must be a non-result number.
+# Numbers in the prose that are not results: years, exhibit and section numbers,
+# reference superscripts, rule, question and indicator names, the AI model's version.
+# Each entry must match a non-result number only, and must not swallow a neighbouring
+# number: every digit run ends at a non-digit (END).
+END = r"(?![\d]|[.,]\d)"
+YEAR = r"20(?:19|2[0-6])"  # the years the study refers to, 2019 to 2026, and no others
+EXHIBIT_NO = r"[IVX\d]+(?:\.\d+)?" + END
 ALLOW = [
-    r"(?<![\d.,])(?:19|20)\d\d(?:[–-](?:19|20)?\d\d)?(?![\d.,]\d)",  # years, 2019-21
+    rf"(?<![\d.,]){YEAR}(?:[–-](?:20)?(?:19|2[0-6]))?{END}",  # 2023, 2019–21, 2022-2023
     r"95% CI",
-    r"\b(?:Table|Figure|Web table|Web figure)s? [IVX\d]+(?:\.\d+)?",
-    r"(?:annexure|Annexure) \d+(?:\.\d+)?",
-    r"§\d+(?:\.\d+)*",  # plan sections
+    rf"\b(?:Table|Figure|Web table|Web figure)s? {EXHIBIT_NO}(?:(?:–| and ){EXHIBIT_NO})*",
+    rf"(?:annexure|Annexure)s? \d+(?:\.\d+)?{END}",
+    rf"§\d+(?:\.\d+)*{END}",  # plan sections
     r"\^[\d,–-]+\^",  # pandoc superscript reference numbers
     r"\bR[1-4]\b",  # scoring rule names
-    r"\b[Ii]ndicators? \d(?:(?:, | and |–)\d)*",  # indicator numbers
+    rf"\b[Ii]ndicators? [1-9]{END}(?:(?:, and |, | and |–)[1-9]{END})*",  # indicator numbers
     r"\bQ[1-4]\b",
+    r"\bClaude Opus \d+(?:\.\d+)?\b",  # the AI model's name (Methods disclosure)
 ]
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
@@ -362,6 +492,13 @@ def _token(s: str) -> re.Pattern:
     """s as a whole token: not inside a longer number and not after a minus sign or hyphen
     (so "−0.48" does not satisfy "0.48": a sign flip is a changed number)."""
     return re.compile(r"(?<![\d.,−-])" + re.escape(s) + r"(?![\d]|[.,]\d)")
+
+
+def _maskable(s: str) -> bool:
+    """A catalogue string masks prose only if it is specific. A bare one- or two-digit
+    integer (a rank change, a count) would mask every such number in the text, so it
+    must be quoted through a label that carries words around it."""
+    return not re.fullmatch(r"\d{1,2}", s)
 
 
 def missing(text: str, wants: dict[str, str]) -> list[tuple[str, str]]:
@@ -380,10 +517,24 @@ def prose(text: str) -> str:
     return "\n".join(out)
 
 
+def section(text: str, heading: str) -> str:
+    """The lines under a '#' heading, up to the next heading of any level ('' if absent)."""
+    out, inside = [], False
+    for ln in text.splitlines():
+        if re.match(r"^#+\s", ln):
+            if inside:
+                break
+            inside = re.match(rf"^#+\s*{re.escape(heading)}\b", ln) is not None
+            continue
+        if inside:
+            out.append(ln)
+    return "\n".join(out)
+
+
 def unaccounted(text: str, wants: dict[str, str], allow: list[str] = ALLOW) -> list[str]:
-    """Numbers left in the prose after masking every expected string and ALLOW pattern."""
+    """Numbers left in the prose after masking every specific expected string and ALLOW."""
     t = prose(text)
-    for v in sorted(set(wants.values()), key=len, reverse=True):
+    for v in sorted({v for v in wants.values() if _maskable(v)}, key=len, reverse=True):
         t = _token(v).sub(" ", t)
     for pat in allow:
         t = re.sub(pat, " ", t)
@@ -404,6 +555,18 @@ def stale_tables(root: Path) -> str | None:
     return None
 
 
+def tables_not_inserted(root: Path, text: str) -> str | None:
+    """Return a message if manuscript.md does not carry tables.md verbatim (comments aside)."""
+    tables = root / "manuscript" / "tables.md"
+    if not tables.exists():
+        return None
+    body = "\n".join(ln for ln in tables.read_text(encoding="utf-8").splitlines()
+                     if not ln.startswith("<!--")).strip()
+    if body not in text:
+        return "manuscript.md does not carry manuscript/tables.md verbatim: re-insert the tables"
+    return None
+
+
 def main(root: Path = ROOT) -> int:
     if not (root / "manuscript").is_dir():
         print(SKIP_DIR)
@@ -414,18 +577,27 @@ def main(root: Path = ROOT) -> int:
         return 0
     text = ms.read_text(encoding="utf-8")
     wants = want(root)
+    abs_wants = want(root, ABSTRACT_REQUIRED)
     bad = 0
     for label, v in missing(text, wants):
         print(f"MISSING {label}: {v!r}")
         bad += 1
+    abstract = section(text, "Abstract")
+    if not abstract.strip():
+        print("MISSING the abstract (no '## Abstract' section)")
+        bad += 1
+    else:
+        for label, v in missing(abstract, abs_wants):
+            print(f"MISSING in the abstract {label}: {v!r}")
+            bad += 1
     for n in unaccounted(text, catalogue(root)):
         print(f"UNACCOUNTED number in prose: {n!r}")
         bad += 1
-    msg = stale_tables(root)
-    if msg:
-        print(msg)
-        bad += 1
-    print(f"{len(wants)} expected strings; {bad} problem(s)")
+    for msg in (stale_tables(root), tables_not_inserted(root, text)):
+        if msg:
+            print(msg)
+            bad += 1
+    print(f"{len(wants)} expected strings ({len(abs_wants)} in the abstract); {bad} problem(s)")
     return 1 if bad else 0
 
 
