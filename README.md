@@ -2,9 +2,9 @@
 
 India's Central TB Division (CTD) rates every state and union territory with a
 **State TB Score**: nine programme indicators with fixed maximum points summing
-to 100. Improvement in the score is now a key deliverable in each state's
-programme implementation plan under the National TB Elimination Programme, so
-funding follows it.
+to 100. From the 2024 cycle, the score's annual improvement is a key deliverable
+in each state's programme implementation plan under the National TB Elimination
+Programme.
 
 This repository holds a test of that score:
 
@@ -37,8 +37,8 @@ and the implementation plan in
 All inputs are published, aggregate, state-level government data: editions of
 the *India TB Report* (CTD, Ministry of Health and Family Welfare) and the
 report of the ICMR National TB Prevalence Survey 2019–21. The source PDFs are
-not redistributed here. A fetch script will download them from their official
-URLs and verify each against the SHA-256 digest recorded in the plan.
+not redistributed here. A fetch script downloads them from their official URLs
+and verifies each against the SHA-256 digest recorded in the plan.
 
 ## Reproducing the analysis
 
@@ -62,15 +62,30 @@ python -I src/q1_reproduce.py 2023
 python -I src/q2_robust.py 2023
 python -I src/q3_validity.py 2023
 python -I src/q4_change.py
+python -I src/explore_udst.py        # exploratory, logged in plan section 13
 
-# 4. Verify: tests, analyses, extraction totals, plan order, deviations log,
+# 4. Exhibits: tables and figures of the manuscript (written to manuscript/,
+#    which is kept private and not in this repository; needs matplotlib)
+python -I exhibits/make_tables.py
+python -I exhibits/make_figures.py
+
+# 5. Verify: tests, analyses, extraction totals, plan order, deviations log,
 #    and byte-for-byte reproduction of the committed outputs
 python -I verification/check_all.py
 ```
 
-`check_all.py` prints `N/N checks passed` and exits non-zero on any failure.
-The extraction-totals check is reported as skipped when the source PDFs are
-not present. `verification/MUTATIONS.md` records one deliberate break per check
+`check_all.py` prints `N/N checks passed` (with the number of skipped checks)
+and exits non-zero on any failure; "all passed" can include skips. The
+extraction-totals check is skipped when the source PDFs are not present, and
+the manuscript checks are skipped when `manuscript/` is absent (it is not in
+this repository).
+
+**Full verification needs a git clone** (`git clone
+https://github.com/hssling/india-state-tb-score`). The order of registration
+and analysis and the byte-for-byte reproduction of the committed outputs are
+checked against the git history; in a copy without `.git`, such as a release
+archive, those two checks print `SKIPPED: not a git checkout` and are counted
+as skipped. `verification/MUTATIONS.md` records one deliberate break per check
 and the failure each produced.
 
 ### Files
@@ -97,16 +112,32 @@ Outputs (`outputs/`):
 - `q3_2023_secondary_states.csv`: state-level score and treatment success for the secondary analysis.
 - `q4_2022_2023_states.csv`: each state's change in score between score years 2022 and 2023, with its noise threshold.
 - `q4_2022_2023_summary.csv`: number of states whose change exceeds the threshold, and the rank correlation of change with the 2022 score.
+- `exploratory_udst_scaling_2023.csv`: **exploratory, not pre-specified** (plan
+  section 13): the Q1 band test repeated with each state's indicator 3
+  achievement scaled to CTD's national figure.
 
 Code: `src/score.py` (indicator achievement and scoring rules), `src/states.py`
 (canonical state and union territory names), `src/extract/` (table extractors),
-`src/q1_reproduce.py` to `src/q4_change.py` (analyses), `tools/fetch_sources.py`
-(download and verification), `tests/` (unit tests), `verification/` (checks).
+`src/q1_reproduce.py` to `src/q4_change.py` (analyses), `src/explore_udst.py`
+(the exploratory analysis), `exhibits/` (the scripts that render the
+manuscript's tables and figures from `outputs/` and `data/`),
+`tools/fetch_sources.py` (download and verification), `tests/` (unit tests),
+`verification/` (checks). The analyses need the standard library only;
+pdfplumber is imported only by `src/extract/`.
 
 ## Licence
 
-Code: MIT (see [`LICENSE`](LICENSE)). The government source documents remain
-the property of their publishers and are not covered by this licence.
+- **Code** (`src/`, `exhibits/`, `tools/`, `tests/`, `verification/`): MIT (see
+  [`LICENSE`](LICENSE)).
+- **Derived data** (`data/extracted/`, `data/source_choices.csv` and
+  `outputs/`): Creative Commons Attribution 4.0 International (CC BY 4.0; see
+  [`LICENSE-DATA`](LICENSE-DATA)). The underlying figures come from Government
+  of India publications (India TB Reports, Central TB Division, Ministry of
+  Health and Family Welfare; report of the ICMR National TB Prevalence Survey
+  2019–21).
+
+The government source documents themselves remain the property of their
+publishers, are not redistributed here and are not covered by either licence.
 
 ## Author
 

@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this code or the analysis plan, please cite it as below."
 title: "India's State TB Score: reproducibility, robustness and validity — analysis code and pre-registered plan"
 abstract: >-
-  Pre-registered analysis plan, and the code that will implement it, for a
+  Pre-registered analysis plan, and the code that implements it, for a
   test of India's State TB Score: whether the published 2023 State TB Scores
   can be reproduced from the indicator values the India TB Report publishes,
   how stable the ranking is to defensible alternative choices, whether higher

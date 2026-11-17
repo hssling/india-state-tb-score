@@ -1,4 +1,4 @@
-"""Task 9b: Q4 change over time helpers (plan 10), synthetic inputs only."""
+"""Q4 change over time helpers (plan 10), synthetic inputs only."""
 import math
 
 import pytest

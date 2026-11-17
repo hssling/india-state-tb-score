@@ -1,0 +1,23 @@
+Derived data licence
+
+The derived data in this repository, namely
+
+  - data/extracted/ (values extracted from the source reports, with their sources),
+  - data/source_choices.csv (the recorded source choices), and
+  - outputs/ (the results of the analyses),
+
+are licensed under the Creative Commons Attribution 4.0 International licence
+(CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
+
+Attribution: Siddalingaiah H S, "India's State TB Score: reproducibility,
+robustness and validity", https://github.com/hssling/india-state-tb-score
+
+The underlying figures come from Government of India publications: the India TB
+Reports of the Central TB Division, Ministry of Health and Family Welfare, and the
+report of the ICMR National TB Prevalence Survey in India 2019-2021 (Indian Council
+of Medical Research). Those documents remain the property of their publishers; they
+are not redistributed in this repository and are not covered by this licence. Users
+of the derived data should also cite the source publications.
+
+The code (src/, exhibits/, tools/, tests/, verification/) is licensed separately
+under the MIT licence: see LICENSE.

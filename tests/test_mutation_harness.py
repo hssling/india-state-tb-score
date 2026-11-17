@@ -1,4 +1,4 @@
-"""Fixture tests of the R34 manuscript checks: skeleton, exhibit citations, labels and the
+"""Fixture tests of the manuscript checks: skeleton, exhibit citations, labels and the
 mutation harness. They use a small synthetic manuscript, not the (git-ignored) real one."""
 import json
 from pathlib import Path

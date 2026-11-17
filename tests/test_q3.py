@@ -1,4 +1,4 @@
-"""Task 9a: Q3 validity helpers (plan 9), synthetic inputs only."""
+"""Q3 validity helpers (plan 9), synthetic inputs only."""
 import math
 
 import pytest

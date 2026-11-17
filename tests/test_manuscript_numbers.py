@@ -83,7 +83,7 @@ def test_unknown_required_label_is_an_error():
         cmn.want(ROOT, required=["q9.nothing"])
 
 
-# ---- skip path (ruling R6) --------------------------------------------------------------
+# ---- skip path (manuscript private) --------------------------------------------------------------
 def test_skips_when_manuscript_dir_absent(tmp_path, capsys):
     assert cmn.main(tmp_path) == 0
     assert capsys.readouterr().out.strip() == cmn.SKIP_DIR
@@ -114,7 +114,7 @@ def _text(root):
 def test_passes_when_text_carries_every_required_string(tmp_path):
     root = _fake_repo(tmp_path)
     text = _text(root)  # a bare list of strings: the value-level checks pass; the section
-    # phrases, exhibit and skeleton checks (R34) need a real manuscript and have their own tests
+    # phrases, exhibit and skeleton checks need a real manuscript and have their own tests
     assert cmn.missing(text, cmn.want(root)) == []
     assert cmn.unaccounted(text, cmn.catalogue(root)) == []
 
@@ -132,7 +132,8 @@ def test_fails_on_a_changed_number(tmp_path, capsys):
 def test_stale_tables_detected(tmp_path):
     ms = tmp_path / "manuscript"
     ms.mkdir()
-    (ms / "make_tables.py").write_text("def render(root):\n    return 'fresh'\n", encoding="utf-8")
+    (tmp_path / "exhibits").mkdir()
+    (tmp_path / "exhibits" / "make_tables.py").write_text("def render(root):\n    return 'fresh'\n", encoding="utf-8")
     (ms / "tables.md").write_text("fresh", encoding="utf-8")
     assert cmn.stale_tables(tmp_path) is None
     (ms / "tables.md").write_text("old", encoding="utf-8")
@@ -208,8 +209,13 @@ def test_methods_constants_are_derived():
     assert w["q1.target.tolerance"] == "0.1%"
     assert w["methods.udst"] == "70% of net notified patients"
     assert w["methods.registration"] == "16 November 2026 at 19:06:50 UTC"
-    assert w["methods.n_deviations"] == "seven dated deviations"
-    assert w["q4.ind4_error.counts"] == "21 successful outcomes against 14 net notified patients"
+    assert w["methods.n_deviations"] == "ten dated entries"
+    assert w["q4.ind4_error.counts"] == "21 successful outcomes of its 2022 cohort of 21"
+    assert w["q4.ind4_error.denominator"] == "14 net notified patients of 2023"
+    assert w["explore.R2.in_band"] == "34 of 35"
+    assert w["explore.R2.outside"] == "Lakshadweep"
+    assert w["q3.survey_excluded"] == "Andaman and Nicobar Islands and Lakshadweep"
+    assert w["q3.survey_not_named"] == "Ladakh"
     assert w["q4.se0_counts"] == "3 states in 2022 and 2 in 2023"
     assert w["methods.udst_se"] == "divided by 0.7"
     assert w["methods.r2_cap"] == "more than its 10 points"

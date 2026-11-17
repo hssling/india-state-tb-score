@@ -1,4 +1,4 @@
-"""Task 8a: India TB Report 2021 (score year 2020).
+"""India TB Report 2021 (score year 2020).
 
 The edition is a scan: its pages carry no text layer, so no table can be
 read without OCR, which the plan does not allow (never OCR-guess numbers).

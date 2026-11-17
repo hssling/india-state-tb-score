@@ -1,0 +1,533 @@
+"""Render every manuscript table from outputs/ and data/ to manuscript/tables.md.
+
+Run as: python -I exhibits/make_tables.py   (from the repository root)
+
+The manuscript itself is kept private until an editorial decision (manuscript/ is not in
+the repository); this script is deposited so that every table can be regenerated from the
+committed outputs.
+
+Every number is read from the committed files and formatted with the helpers of
+verification/check_manuscript_numbers.py, so the tables and the number check share
+one set of formats. No number is typed here. The short phrases of Table I (sources
+and noted mismatches) are written here, and each is guarded by an assertion on the
+source note it summarises, so a changed source choice stops the rendering instead
+of leaving a stale phrase.
+
+IJMR (Instructions for Authors): tables numbered with Roman numerals; 3-5 columns and 4-16
+rows for the four main tables; footnote symbols *, dagger, double dagger, section;
+items that do not fit go online as web tables.
+"""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import inspect  # noqa: E402
+
+from src.q1_reproduce import TOL  # noqa: E402
+from src.q2_robust import N_DRAWS, SAT_LEVEL, SEED, saturation_table  # noqa: E402
+from src.q4_change import Z975  # noqa: E402
+from src.score import POINTS, UDST_BENCHMARK  # noqa: E402
+from verification.check_manuscript_numbers import (  # noqa: E402
+    DP, EN_DASH, MINUS, count, pct, k_of_n, k_of_n_pct, listing, num, population_check, q1_selection,
+    q3_excluded, rank, read_csv, target_check, target_relative, rho, rng, indicator3_contrast,
+)
+
+FOOT = ["*", "†", "‡", "§", "‖", "¶"]
+TIMES = "×"
+ALPHA = "α"
+RHO = "ρ"
+
+
+def rho_ci_cell(r: float, lo: float, hi: float) -> str:
+    """Table cell: rho (lo to hi); the column or row label says '(95% CI)'."""
+    return f"{rho(r)} ({rng(rho(lo), rho(hi))})"
+
+
+# --------------------------------------------------------------------------------------
+# helpers
+# --------------------------------------------------------------------------------------
+def md_table(header: list[str], rows: list[list[str]]) -> str:
+    out = ["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
+    out += ["| " + " | ".join(r) + " |" for r in rows]
+    return "\n".join(out)
+
+
+def block(title: str, header, rows, notes: list[str], main: bool = True) -> str:
+    if main:
+        ncol, nrow = len(header), len(rows)
+        assert 3 <= ncol <= 5, f"{title}: {ncol} columns (IJMR: 3-5)"
+        assert 4 <= nrow <= 16, f"{title}: {nrow} rows (IJMR: 4-16)"
+    # footnote asterisks in titles and notes are escaped so Markdown cannot read them
+    # as emphasis ("rule*" before the closing "**", "*Indicator ..." at line start)
+    def esc(t: str) -> str:
+        return t.replace("*", "\\*")
+
+    notes = [esc(n) for n in notes]
+    parts = [f"**{esc(title)}**", "", md_table(header, rows), ""]
+    parts += [n + "  " for n in notes[:-1]] + notes[-1:]
+    return "\n".join(parts).rstrip() + "\n"
+
+
+def plan_indicators(root: Path) -> dict[int, tuple[int, str]]:
+    """Indicator number -> (points, name) from the plan's section 5.1 table."""
+    text = (root / "docs" / "analysis_plan.md").read_text(encoding="utf-8")
+    out = {}
+    for m in re.finditer(r"^\| ([1-9]) \| (\d+) \| ([^|]+?) \|", text, re.M):
+        out[int(m.group(1))] = (int(m.group(2)), m.group(3).strip())
+    assert sorted(out) == list(range(1, 10)), "plan 5.1 table not parsed"
+    for i, (pts, _) in out.items():
+        assert pts == POINTS[i], f"plan points for indicator {i} differ from src/score.py"
+    return out
+
+
+def choices(root: Path) -> dict[tuple[str, str, str], dict]:
+    return {(r["score_year"], r["indicator"], r["component"]): r
+            for r in read_csv(root / "data" / "source_choices.csv")}
+
+
+def annex(table_id: str) -> str:
+    m = re.fullmatch(r"Annexure (\d+(?:\.\d+)?)", table_id)
+    assert m, table_id
+    return "A" + m.group(1)
+
+
+# --------------------------------------------------------------------------------------
+# Table I: the nine indicators
+# --------------------------------------------------------------------------------------
+MISSING_REASON = {
+    "no_source": "Missing: no state-wise source",
+    "no_denominator": "Missing: no table with the defined denominator",
+    "total_check": "Missing: state rows do not sum to the printed India row",
+}
+
+
+def source_cell(ch: dict, year: str, i: int) -> str:
+    num_r, den_r = ch[(year, str(i), "numerator")], ch[(year, str(i), "denominator")]
+    if num_r["table_id"] == "not located":
+        assert den_r["table_id"] == "not located"
+        return MISSING_REASON["no_source"]
+    if num_r["table_id"] == "missing":
+        assert "denominator" in num_r["note"] and den_r["table_id"] == "missing"
+        return MISSING_REASON["no_denominator"]
+    if num_r["note"].startswith("NOT EXTRACTED"):
+        assert "printed-total" in num_r["note"]
+        return MISSING_REASON["total_check"]
+    den = annex(den_r["table_id"])
+    if i == 3:
+        den = f"{num(UDST_BENCHMARK, 1)} {TIMES} {den}†"
+    return f"{annex(num_r['table_id'])} ÷ {den}"
+
+
+def mismatch_cell(ch: dict, defs: list[dict], i: int) -> str:
+    """Noted definitional mismatches and judgement calls, each guarded by its source note."""
+    def note(year, comp):
+        return ch[(year, str(i), comp)]["note"]
+
+    out = []
+    if i == 1:
+        assert "NOT PERFORMED" in note("2022", "denominator")
+        out.append("2022: annexure 'target' column; national target not printed")
+    if i in (2, 3, 4):
+        assert "JUDGEMENT CALL" in note("2022", "denominator")
+        out.append("2022: net notified taken as the by-sex total of A1.6 (no 'net' column)")
+    if i == 3:
+        assert "DEFINITIONAL MISMATCH (not pre-specified" in note("2023", "numerator")
+        out.insert(0, "Numerator counts bacteriologically confirmed patients only "
+                      "(not pre-specified)‡")
+    if i == 4:
+        d21 = next(d for d in defs if (d["edition"], d["indicator_no"]) == ("2021", "4"))
+        assert d21["note"].startswith("DIFFERS")
+        out.insert(0, "Same-period denominator, as defined; the 2021 edition's "
+                      "previous-year cohort is tested in Q2")
+    if i == 5:
+        assert "'paid at least once' is printed and is used" in note("2023", "numerator")
+        assert "Karnataka" in note("2023", "denominator")
+        out.append("'Paid at least once', as defined; Karnataka denominator blank")
+    if i == 6:
+        assert "JUDGEMENT CALL" in note("2023", "numerator")
+        out.append("'Initiated on treatment' column, not 'second-line'")
+    if i == 8:
+        assert "DEFINITIONAL MISMATCH (§5.5)" in note("2023", "numerator")
+        out.append("Household contacts <5 y given TPT, not children <6 y given "
+                   "isoniazid (pre-specified)")
+    return "; ".join(out) if out else "—"
+
+
+def table1(root: Path) -> str:
+    ind = plan_indicators(root)
+    ch = choices(root)
+    defs = read_csv(root / "data" / "extracted" / "definitions.csv")
+    t71 = next(d for d in defs if (d["edition"], d["indicator_no"]) == ("2023", "total"))
+    rows = []
+    for i in range(1, 10):
+        pts, name = ind[i]
+        rows.append([f"{i}. {name}", count(pts), source_cell(ch, "2023", i),
+                     source_cell(ch, "2022", i), mismatch_cell(ch, defs, i)])
+    sel = q1_selection(root)
+    miss23 = [i for i in range(1, 10) if rows[i - 1][2].startswith("Missing")]
+    miss22 = [i for i in range(1, 10) if rows[i - 1][3].startswith("Missing")]
+    assert miss23 == sel["missing_indicators"], "Table I and Q1 disagree on missing indicators"
+    pts23 = sum(POINTS[i] for i in miss23)
+    pts22 = sum(POINTS[i] for i in miss22)
+    notes = [
+        f"*Definitions: Central TB Division, ntep.in/node/1662, restated in India TB Report "
+        f"2023, Table 7.1 (PDF p. {t71['source_page']}). Sources are annexures (A) of the "
+        f"India TB Report 2024 (score year 2023) and 2023 (score year 2022), as numerator "
+        f"÷ denominator; tables, columns and PDF pages are listed in the deposited "
+        f"source-choice file. Points missing: {count(pts23)} in 2023 (indicators "
+        f"{listing([str(i) for i in miss23])}), {count(pts22)} in 2022 (indicators "
+        f"{listing([str(i) for i in miss22])}).",
+        f"†The state benchmark of CTD's universal drug-susceptibility testing page: "
+        f"{num(100 * UDST_BENCHMARK, 0)}% of net notified patients.",
+        "‡See Table II, footnote *.",
+        "HIV, human immunodeficiency virus; IPT, isoniazid preventive therapy; MDR/RR-TB, "
+        "multidrug- or rifampicin-resistant TB; PLHIV, people living with HIV; ROP, Record "
+        "of Proceedings; TPT, TB preventive treatment; UDST, universal drug-susceptibility "
+        "testing; y, years.",
+    ]
+    return block("Table I. The nine indicators of the State TB Score and their sources",
+                 ["Indicator", "Points", "Score year 2023*", "Score year 2022*",
+                  "Noted mismatch"], rows, notes)
+
+
+# --------------------------------------------------------------------------------------
+# Table II: Q1 by rule
+# --------------------------------------------------------------------------------------
+def table2(root: Path) -> str:
+    sel = q1_selection(root)
+    mp = sel["missing_points"]
+    rows = []
+    for rule, d in sel["per_rule"].items():
+        if "n_in_band" not in d:
+            assert d["status"].startswith("not evaluable")
+            rows.append([rule, "—", "—", "—", "Not tested§"])
+            continue
+        res = [s[rule]["residual"] for s in sel["per_state"].values()
+               if not s[rule]["excluded"]]
+        rows.append([rule, k_of_n(d["n_in_band"], d["n_compared"]),
+                     num(d["max_violation"], DP["score"]),
+                     rng(num(min(res), DP["score"]), num(max(res), DP["score"])),
+                     "Yes" if d["admissible"] else "No"])
+    c3 = indicator3_contrast(root)
+    n = next(d["n_compared"] for d in sel["per_rule"].values() if "n_compared" in d)
+    # plan 7.2: the states outside the band are listed for each rule; the primary rule's
+    # list is printed here, R1 and R3 are marked in Web table 3
+    q1rows = read_csv(root / "outputs" / "q1_2023.csv")
+    outside = [r["state"] for r in q1rows
+               if r["rule"] == sel["chosen"] and r["excluded"] == "0" and r["in_band"] == "0"]
+    assert len(outside) == sel["per_rule"][sel["chosen"]]["n_compared"] -         sel["per_rule"][sel["chosen"]]["n_in_band"]
+    tol = num(TOL, 2)
+    notes = [
+        f"*Indicator 3: the only state-wise column with a rifampicin result counts "
+        f"{k_of_n(c3['k'], c3['n'])} net notified patients ({c3['share']}); Table 11.1 of the "
+        f"same report prints {c3['printed']} of notified patients offered rifampicin "
+        "sensitivity testing.",
+        f"†Residual = published score (India TB Report 2024, Table 11.2) {MINUS} partial "
+        f"score rebuilt from the {count(100 - mp)} points of the available indicators "
+        f"({listing([str(i) for i in sel['available_indicators']])}). A state is inside the "
+        f"admissibility band if {MINUS}{tol} ≤ residual ≤ {count(mp)} + {tol}, "
+        f"{count(mp)} being the points of the missing indicators "
+        f"({listing([str(i) for i in sel['missing_indicators']])}); a rule is admissible if "
+        f"every state is inside. Violation: distance of a residual outside the band.",
+        f"‡Verdict over R1{EN_DASH}R4: {sel['verdict']}. {listing(sel['excluded'])} "
+        f"excluded (indicator 5 not computable); n = {count(n)}. {sel['chosen']} has the "
+        f"smallest maximum violation and is carried into Tables III and IV. Outside the band "
+        f"under {sel['chosen']} ({count(len(outside))} states): {listing(outside)}; under the "
+        f"other rules, see Web table 3.",
+        "§No Central TB Division document states threshold bands for R4.",
+        "R1, proportional, capped at the indicator's maximum; R2, proportional, uncapped; "
+        "R3, relative to the best state; R4, threshold bands.",
+    ]
+    return block("Table II. Reproducing the published 2023 scores, by scoring rule*",
+                 ["Rule", "States inside the band†, n of N",
+                  "Maximum violation (points)", "Residual range (points)",
+                  "Admissible‡"], rows, notes)
+
+
+# --------------------------------------------------------------------------------------
+# Table III / web tables 1-2: Q2 by variant
+# --------------------------------------------------------------------------------------
+def q2_rows(root: Path, rule: str) -> tuple[list[list[str]], dict]:
+    rs = [r for r in read_csv(root / "outputs" / "q2_2023_summary.csv") if r["rule"] == rule]
+    info = {"n": {r["n_compared"] for r in rs if r["n_compared"]}}
+    rows = []
+    order = (["base"] + ["1_weights"]
+             + sorted(r["variant"] for r in rs if r["variant"].startswith("2_loo"))
+             + ["4_matched_cohort", "3_burden", "5_saturated_removed"])
+    for v in order:
+        for r in [r for r in rs if r["variant"] == v]:
+            if v == "base":
+                rows.append([f"Base: rebuilt score ({rule}, rescaled partial)", "—",
+                             "—", rho(float(r["spearman"]))])
+            elif v == "1_weights":
+                s = r["setting"]
+                lab = (f"c = {count(int(s[1:]))}" if s.startswith("c")
+                       else f"{ALPHA} = {count(int(s[5:]))} for each indicator")
+                m = re.match(r"(\d+) draws; seed (\d+)", r["note"])
+                info["draws"], info["seed"] = int(m.group(1)), m.group(2)
+                rows.append([
+                    f"Weights drawn around CTD's ({lab})*",
+                    f"{rank(float(r['median_change']))} "
+                    f"({rng(rank(float(r['median_change_q1'])), rank(float(r['median_change_q3'])))})",
+                    f"{rank(float(r['max_change']))} "
+                    f"({rng(rank(float(r['max_change_q1'])), rank(float(r['max_change_q3'])))})",
+                    f"{rho(float(r['spearman']))} "
+                    f"({rng(rho(float(r['spearman_p2.5'])), rho(float(r['spearman_p97.5'])))})",
+                ])
+            elif v.startswith("2_loo"):
+                i = v.rsplit("_", 1)[1]
+                rows.append([f"Indicator {i} left out", rank(float(r["median_change"])),
+                             rank(float(r["max_change"])), rho(float(r["spearman"]))])
+            elif v == "4_matched_cohort":
+                rows.append(["Treatment success on the matched cohort†",
+                             rank(float(r["median_change"])), rank(float(r["max_change"])),
+                             rho(float(r["spearman"]))])
+            elif v == "3_burden":
+                assert "dropped" in r["note"] and "AGREE" in r["note"]
+                rows.append(["Notification against estimated burden‡", "Not run",
+                             "Not run", "Not run"])
+            elif v == "5_saturated_removed":
+                assert r["note"] == "empty"
+                rows.append(["Saturated indicators removed§", "Not run", "Not run",
+                             "Not run"])
+    unres = [r for r in rs if r["variant"] == "7.3_unrescaled_check"]
+    assert unres and "rank-identical" in unres[0]["note"]
+    assert len(info["n"]) == 1
+    info["n"] = int(info["n"].pop())
+    return rows, info
+
+
+def q2_notes(root: Path, info: dict) -> list[str]:
+    sat = read_csv(root / "outputs" / "q2_2023_saturation.csv")
+    top = max(sat, key=lambda r: float(r["share_ge_0.95"]))
+    tc_note = next(r for r in read_csv(root / "data" / "source_choices.csv")
+                   if (r["score_year"], r["indicator"], r["component"]) == ("2023", "1", "denominator"))
+    tc = target_check(root)
+    assert tc["verdict"] == "AGREE" and "AGREE" in tc_note["note"]
+    rel, tol = target_relative(root), tc["tolerance"]
+    sel = q1_selection(root)
+    assert (info["draws"], info["seed"]) == (N_DRAWS, str(SEED))
+    # plan 8.1 item 5: saturated if >= 80% of states; src/q2_robust.py tests it as 5k >= 4n
+    assert "5 * k >= 4 * len(vals)" in inspect.getsource(saturation_table)
+    sat_share = pct(4, 5, 0)
+    return [
+        f"Rank changes are absolute changes against the base ranking; n = {count(info['n'])} "
+        f"states and union territories ({listing(sel['excluded'])} not computable). {RHO} is "
+        f"Spearman's rank correlation with the published 2023 ranking (Table 11.2). The "
+        f"unrescaled partial score ranks every state identically to the rescaled score.",
+        f"*Dirichlet weights, {count(info['draws'])} draws (fixed, pre-registered seed): median "
+        f"(interquartile range) over draws of each rank-change measure; {RHO} as median "
+        f"(2.5th{EN_DASH}97.5th percentile).",
+        "†Previous year's notified cohort as the denominator of indicator 4.",
+        f"‡Not run: the annexure 'expected' total agreed with the national target "
+        f"(difference {rel}, tolerance {tol}), so no independent burden denominator exists.",
+        f"§Not run: no indicator was saturated (achievement ≥{num(SAT_LEVEL, 2)} in at least "
+        f"{sat_share} of states); the highest was indicator {top['indicator']}, at or above "
+        f"{num(SAT_LEVEL, 2)} in "
+        f"{k_of_n_pct(round(float(top['share_ge_0.95']) * int(top['n_computable'])), int(top['n_computable']))}"
+        f" states.",
+    ]
+
+
+def table3(root: Path, rule: str, title: str, main: bool) -> str:
+    rows, info = q2_rows(root, rule)
+    return block(title, ["Variant", "Median rank change", "Maximum rank change",
+                         f"{RHO} with the published ranking"], rows, q2_notes(root, info), main)
+
+
+# --------------------------------------------------------------------------------------
+# Table IV: Q3 and Q4 by rule
+# --------------------------------------------------------------------------------------
+def table4(root: Path) -> str:
+    sel = q1_selection(root)
+    rules = ["R1", "R2", "R3"]
+    q3 = read_csv(root / "outputs" / "q3_2023_summary.csv")
+    q4 = read_csv(root / "outputs" / "q4_2022_2023_summary.csv")
+
+    def q3row(prefix, label):
+        rs = {r["rule"]: r for r in q3 if r["analysis"].startswith(prefix)}
+        ns = {rs[k]["n"] for k in rules}
+        assert len(ns) == 1
+        return ([label.format(n=count(int(ns.pop())))]
+                + [rho_ci_cell(float(rs[k]["rho"]), float(rs[k]["lo"]), float(rs[k]["hi"]))
+                   for k in rules])
+
+    def q4rows(iset, label):
+        rs = {r["rule"]: r for r in q4 if r["indicator_set"].startswith(iset)}
+        n = {rs[k]["rho_n"] for k in rules}
+        assert len(n) == 1
+        return [
+            [f"Q4, indicators {label}: change exceeds noise, n of N (%)"]
+            + [k_of_n_pct(int(rs[k]["n_exceeds"]), int(rs[k]["n_compared"])) for k in rules],
+            [f"Q4, indicators {label}: {RHO} (95% CI) of 2022 score with change "
+             f"(n = {count(int(n.pop()))})"]
+            + [rho_ci_cell(float(rs[k]["rho"]), float(rs[k]["rho_lo"]), float(rs[k]["rho_hi"]))
+               for k in rules],
+        ]
+
+    sets = [r["indicator_set"] for r in q4 if r["rule"] == sel["chosen"]]
+    full = next(s for s in sets if "excluded" not in s)
+    no1 = next(s for s in sets if "excluded" in s).split(" (")[0]
+    rows = [q3row("9.1", f"Q3: {RHO} (95% CI) with NTPS prevalence* "
+                         "(n = {n} survey units)"),
+            q3row("9.2", f"Q3: {RHO} (95% CI) with MDR/RR-TB treatment success† "
+                         "(n = {n} states)")]
+    rows += q4rows(full, full.replace(",", ", "))
+    rows += q4rows(no1 + " ", no1.replace(",", ", ") + "‡")
+
+    q3p = next(r for r in q3 if r["rule"] == sel["chosen"] and r["analysis"].startswith("9.1"))
+    q3s = next(r for r in q3 if r["rule"] == sel["chosen"] and r["analysis"].startswith("9.2"))
+    ex = q3_excluded(q3p["excluded"])
+    q4p = next(r for r in q4 if r["rule"] == sel["chosen"] and r["indicator_set"] == full)
+    pc = population_check(root)
+    units = [u for u in read_csv(root / "outputs" / "q3_2023_units.csv")
+             if u["rule"] == sel["chosen"]]
+    groups = sum(u["unit_type"] == "group" and u["dropped"] == "0" for u in units)
+    dr = {r["state"]: r for r in read_csv(root / "data" / "extracted" / "itr2024_drtb_outcomes.csv")}
+
+    def _why(reason: str, state: str) -> str:
+        if reason == "cohort blank or zero":  # say which, from the extracted cell
+            return "cohort blank" if dr[state]["cohort_n"] == "" else "cohort zero"
+        return reason
+    sec_ex = [f"{p.split(': ')[1]} ({_why(p.split(': ')[0], p.split(': ')[1])})"
+              for p in q3s["excluded"].split("; ")]
+    notes = [
+        f"Scores are rebuilt under each rule (rescaled partial score); "
+        f"{sel['chosen']} is the primary rule. {RHO} is Spearman's rank correlation with a "
+        f"Fisher-z 95% confidence interval (Fieller variance); no P values are computed. "
+        f"Q4: a state's change exceeds noise if |change| > {num(Z975, 2)} {TIMES} its standard error; "
+        f"{q4p['excluded'].split(' (')[0]} excluded (standard error not computable in 2023). "
+        f"States with a zero-variance component: {count(int(q4p['n_states_se0_2022']))} in "
+        f"2022, {count(int(q4p['n_states_se0_2023']))} in 2023.",
+        f"*ICMR National TB Prevalence Survey 2019{EN_DASH}21, microbiologically confirmed "
+        f"pulmonary TB per 100,000 aged ≥15 y, by state or state group "
+        f"({count(groups)} groups, scored as population-weighted means). Not covered: "
+        f"{listing(ex['not covered by the survey'])}; {listing(ex['unit dropped (no scored member)'])}"
+        f" unit dropped (no score). Populations from annexure 1.2: the "
+        f"{count(pc['n_units'])} units sum to {count(pc['sum'])} against India's "
+        f"{count(pc['india'])} ({pc['diff_pct']}). Negative {RHO} is expected if the score "
+        "tracks less TB.",
+        f"†Annexure 4.13, by state; not in the score. Excluded: {listing(sec_ex)}.",
+        "‡Indicator 1 excluded because its 2022 denominator could not be checked "
+        "against a national target.",
+        "ICMR, Indian Council of Medical Research; MDR/RR-TB, multidrug- or "
+        "rifampicin-resistant TB; NTPS, National TB Prevalence Survey; y, years.",
+    ]
+    return block("Table IV. Validity (Q3, score year 2023) and change over time "
+                 "(Q4, 2022 to 2023), by scoring rule",
+                 ["Measure"] + [r + (" (primary)" if r == sel["chosen"] else "") for r in rules], rows, notes)
+
+
+# --------------------------------------------------------------------------------------
+# Web tables 3-4: per-state values
+# --------------------------------------------------------------------------------------
+REPO_NOTE = ("Per-state values for every rule are in the deposited per-state output files "
+             "(see the data sharing statement).")
+
+
+def web_q1(root: Path) -> str:
+    """R1 and R3 residuals only; the primary-rule residual is what Figure 1 plots, and
+    IJMR forbids the same data in tabular and graphic form."""
+    sel = q1_selection(root)
+    rules = [r for r in sel["sensitivity_rules"] if r != sel["chosen"]]
+    rows = []
+    for st, d in sel["per_state"].items():
+        row = [st, num(d[rules[0]]["published"], DP["score"])]
+        for rule in rules:
+            x = d[rule]
+            row.append("Not computable" if x["excluded"] else
+                       num(x["residual"], DP["score"]) + ("" if x["in_band"] else "*"))
+        rows.append(row)
+    mp = sel["missing_points"]
+    notes = [f"Residual = published {MINUS} rebuilt partial score (points); the published "
+             f"score (India TB Report 2024, Table 11.2) is given for reference. Rule "
+             f"{sel['chosen']} is shown in Figure 1. *Outside the admissibility band "
+             f"({MINUS}{num(TOL, 2)} to {count(mp)} + {num(TOL, 2)} points). "
+             f"{listing(sel['excluded'])}: indicator 5 not computable.",
+             REPO_NOTE.format(f="outputs/q1_2023.csv")]
+    return block(f"Web table 3. Residual of the published 2023 score by state, rules "
+                 f"{listing(rules)}",
+                 ["State or union territory", "Published score"]
+                 + [f"Residual, {r}" for r in rules], rows, notes, main=False)
+
+
+def web_q4(root: Path) -> str:
+    """2022 and 2023 rebuilt scores with their SEs, per rule and indicator set. The
+    change, threshold and verdict are what Figure 4 plots, so they are not repeated."""
+    sel = q1_selection(root)
+    rules = list(sel["sensitivity_rules"])
+    allr = read_csv(root / "outputs" / "q4_2022_2023_states.csv")
+    sets = list(dict.fromkeys(r["indicator_set"] for r in allr))
+    states = list(dict.fromkeys(r["state"] for r in allr))
+    by = {(r["indicator_set"], r["rule"], r["state"]): r for r in allr}
+
+    def sc(s, se):
+        v = num(float(s), DP["score"])
+        return f"{v} ({num(float(se), DP['score'])})" if se else f"{v} (not computable)"
+
+    rows, over = [], set()
+    for iset in sets:
+        label = iset.split(" (")[0].replace(",", ", ")
+        rows.append([f"**Indicators {label}**"] + [""] * (2 * len(rules)))
+        for st in states:
+            row = [st + ("†" if by[(iset, rules[0], st)]["ut"] == "1" else "")]
+            for rule in rules:
+                r = by[(iset, rule, st)]
+                for y in ("2022", "2023"):
+                    row.append(sc(r[f"s_{y}"], r[f"se_{y}"]))
+                    if float(r[f"s_{y}"]) > 100:
+                        over.add(rule)
+            rows.append(row)
+    notes = [f"Rebuilt score (rescaled partial score), standard error (SE) in parentheses. "
+             f"The change between the years under {sel['chosen']}, indicators "
+             f"{sets[0].replace(',', ', ')}, is shown in Figure 4.",
+             "†Union territory."]
+    if over:
+        over = sorted(over)
+        notes.append(f"{listing(over)} {'is' if len(over) == 1 else 'are'} uncapped; "
+                     f"scores can exceed 100.")
+    notes.append(REPO_NOTE.format(f="outputs/q4_2022_2023_states.csv"))
+    header = ["State or union territory"] + [f"{r}, {y}" for r in rules
+                                             for y in ("2022", "2023")]
+    return block("Web table 4. Rebuilt scores for score years 2022 and 2023 (SE), by rule "
+                 "and indicator set", header, rows, notes, main=False)
+
+
+# --------------------------------------------------------------------------------------
+def render(root: Path = ROOT) -> str:
+    sel = q1_selection(root)
+    others = [r for r in sel["sensitivity_rules"] if r != sel["chosen"]]
+    parts = [
+        "<!-- Generated by exhibits/make_tables.py from outputs/ and data/. "
+        "Do not edit by hand. -->\n",
+        table1(root),
+        table2(root),
+        table3(root, sel["chosen"], "Table III. Robustness of the 2023 ranking to defensible "
+               f"alternatives (rule {sel['chosen']})", True),
+        table4(root),
+        "# Web tables\n",
+    ]
+    for k, rule in enumerate(others, 1):
+        parts.append(table3(root, rule, f"Web table {k}. Robustness of the 2023 ranking "
+                            f"(rule {rule}; layout as Table III)", False))
+    assert len(others) == 2, "web table numbering assumes two sensitivity rules"
+    parts += [web_q1(root), web_q4(root)]
+    return "\n".join(parts)
+
+
+def main() -> int:
+    out = ROOT / "manuscript" / "tables.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(render(ROOT), encoding="utf-8", newline="\n")
+    print(f"wrote {out.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

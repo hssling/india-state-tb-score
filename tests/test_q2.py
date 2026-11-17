@@ -1,4 +1,4 @@
-"""Task 7: Q2 robustness helpers (plan 8), synthetic inputs only."""
+"""Q2 robustness helpers (plan 8), synthetic inputs only."""
 import statistics
 
 import pytest

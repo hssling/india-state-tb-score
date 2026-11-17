@@ -2,7 +2,7 @@
 
 The file is a scan. Every page is a mosaic of images with no text layer
 (one page in 352 carries 130 characters of a photo caption), so no table can
-be read without OCR, and the task rules forbid OCR-guessing numbers. This
+be read without OCR, and this study does not read numbers by OCR. This
 module records that finding reproducibly and writes the edition's rows of
 data/extracted/definitions.csv. It writes no indicator file and no source
 choice: the freeze rule (plan §5.4 item 7) records choices only together with
@@ -52,7 +52,7 @@ NEEDED_PAGES: dict[int, str] = {
 
 
 class Blocked(RuntimeError):
-    """The edition cannot be extracted under the task rules."""
+    """The edition cannot be extracted without OCR, which this study does not use."""
 
 
 def text_layer_status(pdf: Path = PDF) -> dict:

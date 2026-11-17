@@ -3,7 +3,7 @@
 Run as: python -I verification/check_manuscript_numbers.py
 
 The manuscript (manuscript/, git-ignored) is kept private until an editorial
-decision. Ruling R6: when manuscript/ is absent this prints
+decision. When manuscript/ is absent this prints
 "SKIPPED: manuscript/ not present (kept private until a decision)" and exits 0, and
 check_all counts the step as skipped. It is also skipped while manuscript/ exists but
 manuscript/manuscript.md has not been written.
@@ -20,20 +20,20 @@ When manuscript/manuscript.md is present, these checks run:
    years (2019-2026), exhibit, section, rule, question and indicator names (each digit
    run ending at a non-digit, so "indicator 6, 25" leaves 25), reference superscripts
    and the AI model's version. Markdown table rows (lines starting with "|", which
-   make_tables.py generates) and everything from the "References" heading on are not
+   exhibits/make_tables.py generates) and everything from the "References" heading on are not
    scanned. A changed number therefore fails twice: its expected string goes missing
    and the changed value is unaccounted;
-4. if manuscript/make_tables.py and manuscript/tables.md exist, tables.md equals a
+4. if exhibits/make_tables.py and manuscript/tables.md exist, tables.md equals a
    fresh rendering (so the tables are not stale against outputs/), and manuscript.md
    carries tables.md verbatim.
 
 catalogue() is a dict of label -> string, derived from outputs/, data/, the code's own
 constants (src/) and, for constants the code does not hold, the registered plan
 (docs/analysis_plan.md); want() is its REQUIRED subset. Software versions are read from
-the running interpreter and the installed pdfplumber.
+ENVIRONMENT.md, which pins the versions that produced the committed outputs.
 Number formats (decimals, the minus sign U+2212, en dash ranges, thousands
 separators) are fixed once, in the "Number formats" section below, and
-manuscript/make_tables.py imports the same helpers, so the text and the tables
+exhibits/make_tables.py imports the same helpers, so the text and the tables
 cannot drift apart in format. As the prose takes shape, add labels to catalogue() and
 list the ones the text must carry in REQUIRED.
 Exit 1 on any failure.
@@ -213,7 +213,8 @@ def population_check(root: Path) -> dict:
 
 MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
           "September", "October", "November", "December")
-WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+         "eleven", "twelve")
 
 
 def plan_text(root: Path) -> str:
@@ -243,15 +244,39 @@ def plan_facts(root: Path) -> dict:
 
 
 def q4_ind4_error(root: Path) -> dict:
-    """The impossible treatment-success value that excludes a state from the noise test."""
+    """The treatment-success achievement above 1 that excludes a state from the noise test
+    (plan 10.2), with the cohort whose outcomes it counts (an artefact of the same-period
+    denominator: outcomes of the previous year's cohort over this year's notified)."""
     r = next(r for r in read_csv(root / "outputs" / "q4_2022_2023_summary.csv")
              if r["primary"] == "1")
     m = re.search(r"^(.+?) \(SE not computable in (\d{4}) \(indicator (\d): binomial a = "
                   r"(\d+(?:\.\d+)?) > 1 \((\d+)/(\d+)\)\)\)$", r["excluded"])
     if not m:
         raise ValueError("q4 summary: excluded state not in the expected form")
-    return {"state": m.group(1), "year": m.group(2), "indicator": m.group(3),
-            "a": m.group(4), "k": int(m.group(5)), "n": int(m.group(6))}
+    state, k = m.group(1), int(m.group(5))
+    cohort = next(c for c in read_csv(root / "data" / "extracted" / "itr2024_tsr_cohort.csv")
+                  if c["state"] == state)
+    if int(cohort["success"]) != k:
+        raise ValueError(f"{state}: q4 success {k} differs from the cohort file")
+    return {"state": state, "year": m.group(2), "indicator": m.group(3),
+            "a": m.group(4), "k": k, "n": int(m.group(6)),
+            "cohort_year": cohort["cohort_year"], "cohort_n": int(cohort["cohort_notified"])}
+
+
+def explore_udst(root: Path) -> dict[str, dict]:
+    """Rule -> summary row of the exploratory indicator 3 scaling (plan section 13)."""
+    rows = read_csv(root / "outputs" / "exploratory_udst_scaling_2023.csv")
+    if any(r["label"] != "exploratory" for r in rows):
+        raise ValueError("exploratory_udst_scaling_2023.csv: a row is not labelled exploratory")
+    return {r["rule"]: r for r in rows if r["row_type"] == "rule_summary"}
+
+
+def survey_not_covered(root: Path) -> dict[str, list[str]]:
+    """States the survey excludes, and states it does not name (data/extracted)."""
+    rows = read_csv(root / "data" / "extracted" / "ntps_not_covered.csv")
+    named = [r["state"] for r in rows if r["reason"] != "not listed in survey units"]
+    unnamed = [r["state"] for r in rows if r["reason"] == "not listed in survey units"]
+    return {"excluded": named, "not_named": unnamed}
 
 
 def q3_measure(root: Path) -> dict:
@@ -274,9 +299,9 @@ def environment(root: Path) -> dict[str, str]:
 
 
 def figure_constants(root: Path) -> dict[str, str]:
-    """Figure 3's dodge of near-coincident error bars, read from make_figures.py (local
-    and git-ignored, like the manuscript); empty if the script is absent."""
-    script = root / "manuscript" / "make_figures.py"
+    """Figure 3's dodge of near-coincident error bars, read from exhibits/make_figures.py;
+    empty if the script is absent."""
+    script = root / "exhibits" / "make_figures.py"
     if not script.exists():
         return {}
     src = script.read_text(encoding="utf-8")
@@ -404,8 +429,9 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
             w["q4.se0_counts"] = (f"{count(int(r['n_states_se0_2022']))} states in 2022 and "
                                   f"{count(int(r['n_states_se0_2023']))} in 2023")
     err = q4_ind4_error(root)
-    w["q4.ind4_error.counts"] = (f"{count(err['k'])} successful outcomes against "
-                                 f"{count(err['n'])} net notified patients")
+    w["q4.ind4_error.counts"] = (f"{count(err['k'])} successful outcomes of its "
+                                 f"{err['cohort_year']} cohort of {count(err['cohort_n'])}")
+    w["q4.ind4_error.denominator"] = f"{count(err['n'])} net notified patients of {err['year']}"
     w["q4.ind4_error.a"] = f"achievement of {err['a']}"
     # a binomial indicator at full achievement has se = 0 (plan 10.2)
     w["q4.se0_cause"] = f"{pct(1, 1, 0)} on a binomial indicator"
@@ -419,6 +445,9 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     w["q3.per"] = f"per {count(m['per'])}"
     w["q3.age_short"] = f"≥{count(m['age'])} y"  # tables and figures abbreviate years (IJMR)
     w["q3.units_analysed_reporting"] = f"{count(len(kept))} reporting units"
+    nc = survey_not_covered(root)
+    w["q3.survey_excluded"] = listing(nc["excluded"])
+    w["q3.survey_not_named"] = listing(nc["not_named"])
     cov = read_csv(root / "data" / "extracted" / "ntps_cluster_coverage.csv")
     india = next(r for r in cov if r["state"] == "INDIA")
     w["q3.clusters"] = (f"{count(int(india['clusters_completed']))} of "
@@ -428,6 +457,11 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
               if r["rule"] == sel["chosen"] and r["variant"] == "base")
     w["q2.fifth_size"] = f"{count(fifth_size(n2))} states in each fifth"
     w.update(figure_constants(root))
+
+    # ---- exploratory (plan section 13): indicator 3 scaled to CTD's national figure
+    for rule, r in explore_udst(root).items():
+        w[f"explore.{rule}.in_band"] = k_of_n(int(r["n_in_band"]), int(r["n_compared"]))
+        w[f"explore.{rule}.outside"] = listing(r["outside"].split("; ") if r["outside"] else [])
 
     # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
     ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
@@ -470,7 +504,7 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     w["methods.sat_share"] = f"{pf['sat_share']}% of states"
     w["methods.sat_level"] = num(SAT_LEVEL, 2)
     w["methods.registration"] = pf["registration"]
-    w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated deviations"
+    w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated entries"
     env = environment(root)
     w["methods.python"] = f"Python {env['Python']}"
     w["methods.pdfplumber"] = f"pdfplumber {env['pdfplumber']}"
@@ -490,11 +524,14 @@ REQUIRED = [
     "q2.R2.1_weights.c63.spearman_range",
     # Q3
     "q3.R2.primary.rho_ci", "q3.R2.primary.n",
-    "q3.units_printed", "q3.units_analysed", "q3.states_covered", "q3.not_covered",
+    "q3.units_printed", "q3.units_analysed", "q3.states_covered", "q3.survey_excluded",
+    "q3.survey_not_named",
     "q3.age", "q3.per", "q3.clusters",
     # Q4 and the disclosures of the Discussion
     "q4.R2.all.exceeds", "q4.R2.all.rho_n", "q4.R2.no1.rho_ci", "q4.R1.no1.rho_context",
     "q4.excluded", "q4.se0_counts", "q4.se0_cause", "q4.ind4_error.*",
+    # exploratory (plan section 13)
+    "explore.R2.in_band", "explore.R2.outside",
     # plan 9.3: deaths and loss to follow-up, reported descriptively
     "ctx.*",
     # Methods constants. The seed value is not printed in the blinded text (it can be
@@ -614,7 +651,7 @@ def unaccounted(text: str, wants: dict[str, str], allow: list[str] = ALLOW) -> l
 
 def stale_tables(root: Path) -> str | None:
     """Return a message if manuscript/tables.md differs from a fresh make_tables rendering."""
-    script = root / "manuscript" / "make_tables.py"
+    script = root / "exhibits" / "make_tables.py"
     tables = root / "manuscript" / "tables.md"
     if not (script.exists() and tables.exists()):
         return None
@@ -622,7 +659,7 @@ def stale_tables(root: Path) -> str | None:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     if mod.render(root) != tables.read_text(encoding="utf-8"):
-        return "manuscript/tables.md is stale: re-run python -I manuscript/make_tables.py"
+        return "manuscript/tables.md is stale: re-run python -I exhibits/make_tables.py"
     return None
 
 
@@ -639,7 +676,7 @@ def tables_not_inserted(root: Path, text: str) -> str | None:
 
 
 # --------------------------------------------------------------------------------------
-# Ruling R34: whole-phrase requirements per section, label and year checks, and a golden
+# Whole-phrase requirements per section, label and year checks, and a golden
 # skeleton of every number token
 # --------------------------------------------------------------------------------------
 # Each phrase is a literal with {label} placeholders filled from catalogue(); it must occur
@@ -657,6 +694,7 @@ SECTION_REQUIRED: dict[str, list[str]] = {
         "{methods.central_draws}",
         "ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} units",
         "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise",
+        "(exploratory analysis)",
     ],
     "Methods": [
         "{methods.total_points}", "{methods.udst}", "{methods.udst_se}", "{methods.r2_cap}",
@@ -664,6 +702,8 @@ SECTION_REQUIRED: dict[str, list[str]] = {
         "{methods.z}", "{methods.ci_level}", "{methods.fieller}", "{methods.sat_share}",
         "{methods.sat_level}", "{methods.registration}", "{methods.n_deviations}",
         "{methods.python}", "{methods.pdfplumber}", "by {pop.diff}", "score year 2020",
+        "as the plan records (§4)", "One exploratory analysis, not pre-specified",
+        "({ind3.table11_1_share} ÷ {ind3.annexure_share})",
     ],
     "Results": [
         "worth {q1.missing_points}, are not published by state (Table I)",
@@ -680,6 +720,10 @@ SECTION_REQUIRED: dict[str, list[str]] = {
         "Web tables 1 and 2", "Web table 3",
         "The survey prints {q3.units_printed}, from {q3.clusters}",
         "{q3.units_analysed} representing {q3.states_covered} were analysed",
+        "{q3.survey_excluded} not covered, and {q3.survey_not_named} not named by the survey",
+        "In the exploratory analysis, with indicator 3 scaled to CTD's national figure, "
+        "{explore.R2.in_band} states lay in the band under R2; the exception, "
+        "{explore.R2.outside}, lay below it",
         "was ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} (Table IV, Figure 3)",
         "{ctx.died.national} patients of the 2022 cohort died",
         "and {ctx.ltfu.national} were lost to follow-up",
@@ -691,7 +735,10 @@ SECTION_REQUIRED: dict[str, list[str]] = {
         "Web table 4",
     ],
     "Discussion": [
-        "{q4.se0_counts}", "{q4.se0_cause}", "{q4.ind4_error.counts}", "{q4.ind4_error.a}",
+        "{q4.se0_counts}", "{q4.se0_cause}", "{q4.ind4_error.a}",
+        "the {q4.ind4_error.counts} are divided by the {q4.ind4_error.denominator}",
+        "brought {explore.R2.in_band} states into the band under R2 (exploratory)",
+        "{q3.survey_not_named} is not named by the survey",
         "{q4.R2.no1.rho_ci}",
         "and {q4.R1.no1.rho_context}", "{ind3.annexure_share} against {ind3.table11_1_share} of notified patients",
         "Q3 rests on {q3.units_analysed}", "the survey (2019–21)",
@@ -814,7 +861,7 @@ def exhibit_problems(text: str) -> list[str]:
             out.append(f"EXHIBITS: first citations of {kind}s out of order: {first}")
         never = sorted(have[kind] - set(nums))
         if never:
-            out.append(f"EXHIBITS: {kind} {never} never cited in the text (IJMR L586-587)")
+            out.append(f"EXHIBITS: {kind} {never} never cited in the text")
     return out
 
 

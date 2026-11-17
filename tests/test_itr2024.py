@@ -1,4 +1,4 @@
-"""Task 4: India TB Report 2024 (score year 2023) extraction."""
+"""India TB Report 2024 (score year 2023) extraction."""
 import csv
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-"""Tie the submission .docx files to the Markdown sources (ruling R34).
+"""Tie the submission .docx files to the Markdown sources.
 
 Run as: python -I verification/check_docx_tie.py
 

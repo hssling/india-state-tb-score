@@ -137,14 +137,14 @@ python -I verification/check_all.py
 
 ## Manuscript numbers (check_manuscript_numbers.py, mutate_manuscript.py)
 
-Ruling R34 replaced the first version of this check (55 of 92 caught, 17 November 2026,
+The current check replaced a first version that caught 55 of 92 mutations (17 November 2026,
 before the fix). Its layers now are: (1) the catalogue strings derived from `outputs/`,
 `data/` and the code, required whole and every other number accounted for; (2) per-section
 whole-phrase requirements (`SECTION_REQUIRED`: the label's words plus the value, checked
 only inside the Abstract, Methods, Results or Discussion), so "ρ 0.82–0.93" and "n = 19"
 cannot be satisfied by the same number elsewhere; (3) exhibit checks (every cited Table I-IV,
 Figure 1-4 and Web table 1-4 exists, first citations ascend within each type, each is cited
-at least once, IJMR L586-587), label ranges (Q1-Q4, R1-R4, indicators 1-9) and years tied
+at least once, as the journal's instructions require), label ranges (Q1-Q4, R1-R4, indicators 1-9) and years tied
 to the data (report years 2023 and 2024, change years 2022 and 2023, survey span 2019–21,
 all pinned in phrases); (4) a golden skeleton, `manuscript/number_skeleton.json`, the
 ordered list of every number token (and every Table numeral) of the Abstract, Methods,
@@ -154,7 +154,7 @@ a reviewed edit of the text. R4 is the pre-specified threshold-band rule that th
 could not be tested, so R1-R4 are valid.
 
 The harness, `verification/mutate_manuscript.py` (fixture tests: `tests/test_mutation_harness.py`),
-changes each of the 305 number tokens and Table numerals of those five sections one at a
+changes each of the 321 number tokens and Table numerals of those five sections one at a
 time, in memory, on a copy of `manuscript/manuscript.md` (the file is never written), and
 runs the whole checker on each copy. Two kinds: `inc` (last digit plus one; a Roman
 numeral to the next) and `swap` (the token replaced by the next different token of the
@@ -162,11 +162,11 @@ same section, a value of the right form). Run on 17 November 2026 on the real ma
 
 | Mutation kind | Tokens | Caught |
 |---|---|---|
-| inc | 305 | 305 |
-| swap | 305 | 305 |
-| **All** | **610** | **610** |
+| inc | 321 | 321 |
+| swap | 321 | 321 |
+| **All** | **642** | **642** |
 
-Layers without the skeleton (to show what each layer adds; same 610 changes): the value
+Layers without the skeleton (to show what each layer adds; measured on the earlier text of 305 tokens, 610 changes): the value
 and phrase layers alone catch 170 of 305 `inc` and 206 of 305 `swap` changes. What
 only the skeleton catches: changes of years, exhibit and indicator numbers and other labels
 where the new value is itself valid, such as a swap of "Table III" for "Table II" or of

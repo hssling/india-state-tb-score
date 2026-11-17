@@ -1,4 +1,4 @@
-"""Mutation test of check_manuscript_numbers.py on the manuscript (ruling R34).
+"""Mutation test of check_manuscript_numbers.py on the manuscript.
 
 Run as: python -I verification/mutate_manuscript.py [--kind inc|swap|both] [--list]
 

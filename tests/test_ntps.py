@@ -1,4 +1,4 @@
-"""Task 8b: ICMR National TB Prevalence Survey 2019-21, state and state-group units."""
+"""ICMR National TB Prevalence Survey 2019-21, state and state-group units."""
 import csv
 from pathlib import Path
 

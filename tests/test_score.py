@@ -1,4 +1,4 @@
-"""Task 5: indicator achievement and scoring rules R1-R3 (synthetic inputs only)."""
+"""Indicator achievement and scoring rules R1-R3 (synthetic inputs only)."""
 import pytest
 
 from src import score

@@ -1,4 +1,4 @@
-"""Task 6: Q1 rule selection (plan 7.1-7.3), synthetic inputs only."""
+"""Q1 rule selection (plan 7.1-7.3), synthetic inputs only."""
 import pytest
 
 from src.q1_reproduce import select_rule
