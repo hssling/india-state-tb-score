@@ -8,6 +8,9 @@ is reproduced byte for byte. In a copy without .git (a release archive), that st
 check_plan_order print "SKIPPED: not a git checkout ..." and are counted as skipped: clone
 the repository to verify the history and the byte reproduction. Prints "N/N checks
 passed" (skipped steps are counted separately); exits 1 on any failure.
+
+When the private manuscript/jph_v2 directory (the Journal of Public Health set) is present,
+its number check and docx tie run as two further steps, with that set's profile.
 """
 import subprocess
 import sys
@@ -32,6 +35,21 @@ CHECKS = [
     ("check_manuscript_numbers", PY + ["verification/check_manuscript_numbers.py"]),
     ("check_docx_tie", PY + ["verification/check_docx_tie.py"]),
 ]
+# The Journal of Public Health set (manuscript/jph_v2, git-ignored like the rest of
+# manuscript/): checked with its own profile when the directory is present. Without it the
+# steps are not listed, so the output of a checkout without that set is unchanged.
+JPH_DIR = "manuscript/jph_v2"
+JPH_CHECKS = [
+    ("check_manuscript_numbers (jph_v2)",
+     PY + ["verification/check_manuscript_numbers.py", "--manuscript-dir", JPH_DIR]),
+    ("check_docx_tie (jph_v2)",
+     PY + ["verification/check_docx_tie.py", "--manuscript-dir", JPH_DIR]),
+]
+
+
+def checks(root: Path = ROOT) -> list[tuple[str, list[str]]]:
+    """CHECKS, and the jph_v2 checks when manuscript/jph_v2 exists."""
+    return CHECKS + (JPH_CHECKS if (root / JPH_DIR).is_dir() else [])
 
 
 NOT_GIT = ("SKIPPED: not a git checkout (clone the repository to verify history and byte "
@@ -90,7 +108,7 @@ def main() -> int:
             tally["passed"] += 1
             report(label, "ok")
 
-    for name, cmd in CHECKS:
+    for name, cmd in checks():
         go(name, cmd)
 
     total = tally["passed"] + tally["failed"]

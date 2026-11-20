@@ -1,6 +1,7 @@
 """Mutation test of check_manuscript_numbers.py on the manuscript.
 
 Run as: python -I verification/mutate_manuscript.py [--kind inc|swap|both] [--list]
+                                                     [--manuscript-dir DIR] [--profile NAME]
 
 Every number token (and Table numeral) of the Abstract, Methods, Results, Discussion and Legends to Figures of
 manuscript/manuscript.md is changed, one token at a time, in a copy of the text held in
@@ -15,6 +16,9 @@ Two kinds of change:
 
 Prints caught/total and every uncaught mutation; exits 1 if any is uncaught. Prints
 "SKIPPED" and exits 0 when manuscript/manuscript.md is absent (it is git-ignored).
+--manuscript-dir (default manuscript) runs it on another manuscript directory with that
+directory's profile (check_manuscript_numbers.PROFILES; jph for manuscript/jph_v2); the
+checked sections are the profile's.
 """
 import re
 import sys
@@ -27,13 +31,19 @@ if str(ROOT) not in sys.path:
 from verification import check_manuscript_numbers as cmn  # noqa: E402
 
 
-def token_spans(text: str) -> list[tuple[str, int, int]]:
-    """(section, start, end) of every number token in the checked sections, in order."""
-    spans, sec, pos = [], None, 0
+def token_spans(text: str, order: tuple[str, ...] = cmn.SECTION_ORDER) -> list[tuple[str, int, int]]:
+    """(section, start, end) of every number token in the checked sections, in order. A
+    sub-heading ('###') inside a section neither ends it nor carries tokens."""
+    spans, sec, level, pos = [], None, 0, 0
     for line in text.splitlines(keepends=True):
-        if re.match(r"^#+\s", line):
-            sec = next((s for s in cmn.SECTION_ORDER
+        m = re.match(r"^(#+)\s", line)
+        if m:
+            if sec and len(m.group(1)) > level:
+                pos += len(line)
+                continue
+            sec = next((s for s in order
                         if re.match(rf"^#+\s*{re.escape(s)}\b", line)), None)
+            level = len(m.group(1))
         elif sec:
             spans += [(sec, pos + a, pos + b) for a, b, _ in cmn.skel_spans(line)]
         pos += len(line)
@@ -51,9 +61,9 @@ def bump(tok: str) -> str:
     return tok[:-1] + str((int(tok[-1]) + 1) % 10)
 
 
-def mutations(text: str, kind: str = "inc"):
+def mutations(text: str, kind: str = "inc", order: tuple[str, ...] = cmn.SECTION_ORDER):
     """Yield (description, mutated_text) for every number token of the checked sections."""
-    spans = token_spans(text)
+    spans = token_spans(text, order)
     for i, (sec, a, b) in enumerate(spans):
         old = text[a:b]
         if kind == "inc":
@@ -68,12 +78,15 @@ def mutations(text: str, kind: str = "inc"):
         yield f"{sec}: {old} -> {new} | ...{ctx}...", text[:a] + new + text[b:]
 
 
-def run(root: Path, text: str, kinds=("inc", "swap"), check=None) -> tuple[int, int, list[str]]:
+def run(root: Path, text: str, kinds=("inc", "swap"), check=None,
+        profile: "cmn.Profile | None" = None, ms_dir: Path | None = None
+        ) -> tuple[int, int, list[str]]:
     """(caught, total, descriptions of the uncaught mutations)."""
-    check = check or (lambda t: cmn.problems(root, t))
+    profile = profile or cmn.IJMR
+    check = check or (lambda t: cmn.problems(root, t, profile, ms_dir))
     caught, total, escaped = 0, 0, []
     for kind in kinds:
-        for desc, mutated in mutations(text, kind):
+        for desc, mutated in mutations(text, kind, profile.section_order):
             total += 1
             if check(mutated):
                 caught += 1
@@ -83,19 +96,21 @@ def run(root: Path, text: str, kinds=("inc", "swap"), check=None) -> tuple[int, 
 
 
 def main(argv: list[str]) -> int:
-    ms = ROOT / "manuscript" / "manuscript.md"
+    profile, ms_dir = cmn.cli_profile(argv, ROOT)
+    ms = ms_dir / "manuscript.md"
     if not ms.exists():
-        print("SKIPPED: manuscript/manuscript.md not present (kept private until a decision)")
+        rel = ms.relative_to(ROOT).as_posix() if ms.is_relative_to(ROOT) else str(ms)
+        print(f"SKIPPED: {rel} not present (kept private until a decision)")
         return 0
     kind = argv[argv.index("--kind") + 1] if "--kind" in argv else "both"
     kinds = ("inc", "swap") if kind == "both" else (kind,)
     text = ms.read_text(encoding="utf-8")
-    if cmn.problems(ROOT, text):
+    if cmn.problems(ROOT, text, profile, ms_dir):
         print("The unmutated manuscript already fails the checker; fix that first.")
         return 1
     caught, total, escaped = 0, 0, []
     for k in kinds:
-        c, t, e = run(ROOT, text, (k,))
+        c, t, e = run(ROOT, text, (k,), profile=profile, ms_dir=ms_dir)
         print(f"{k}: caught {c} of {t}")
         caught, total, escaped = caught + c, total + t, escaped + e
     print(f"caught {caught} of {total}")

@@ -37,6 +37,17 @@ exhibits/make_tables.py imports the same helpers, so the text and the tables
 cannot drift apart in format. As the prose takes shape, add labels to catalogue() and
 list the ones the text must carry in REQUIRED.
 Exit 1 on any failure.
+
+Profiles. The journal-specific constants (the "n of N (x%)" style, Roman or Arabic table
+numerals, the main-text display limits, web or supplementary tables, the checked sections
+and phrases, required headings, the submission file names and word limits) are a Profile:
+IJMR for manuscript/ (the default; its behaviour is unchanged) and JPH (Journal of Public
+Health) for manuscript/jph_v2. Run as
+    python -I verification/check_manuscript_numbers.py --manuscript-dir manuscript/jph_v2
+to check that set; --profile NAME overrides the profile found from the directory. The
+skeleton is that directory's number_skeleton.json. The JPH Discussion has '###'
+sub-headings; section() therefore ends a section at the next heading of the same or a
+higher level only.
 """
 from __future__ import annotations
 
@@ -48,6 +59,7 @@ import math
 import statistics
 import re
 import sys
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -109,9 +121,13 @@ def k_of_n(k: int, n: int) -> str:
     return f"{count(k)} of {count(n)}"
 
 
-def k_of_n_pct(k: int, n: int) -> str:
-    """Absolute numbers with the percentage (IJMR): '24 of 35 (68.6%)'."""
-    return f"{k_of_n(k, n)} ({pct(k, n)})"
+COUNT_PCT = "{k_of_n} ({pct})"  # IJMR: absolute numbers with the percentage
+
+
+def k_of_n_pct(k: int, n: int, style: str = COUNT_PCT) -> str:
+    """Absolute numbers with the percentage (IJMR): '24 of 35 (68.6%)'. `style` is the
+    profile's "n of N (x%)" format (Profile.count_pct)."""
+    return style.format(k_of_n=k_of_n(k, n), pct=pct(k, n))
 
 
 def rho(r: float) -> str:
@@ -326,8 +342,9 @@ def q3_excluded(summary_excluded: str) -> dict[str, list[str]]:
 # --------------------------------------------------------------------------------------
 # Expected strings
 # --------------------------------------------------------------------------------------
-def catalogue(root: Path = ROOT) -> dict[str, str]:
-    """label -> string, for every number the manuscript may quote. All derived from files."""
+def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
+    """label -> string, for every number the manuscript may quote. All derived from files.
+    `count_pct` is the profile's "n of N (x%)" format."""
     w: dict[str, str] = {}
 
     # ---- Q1: reproducibility (outputs/q1_2023_selection.json, q1_target_check.txt)
@@ -416,7 +433,7 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     for r in read_csv(root / "outputs" / "q4_2022_2023_summary.csv"):
         iset = "all" if r["indicator_set"] == "1,2,3,4,6" else "no1"
         key = f"q4.{r['rule']}.{iset}"
-        w[key + ".exceeds"] = k_of_n_pct(int(r["n_exceeds"]), int(r["n_compared"]))
+        w[key + ".exceeds"] = k_of_n_pct(int(r["n_exceeds"]), int(r["n_compared"]), count_pct)
         w[key + ".rho_ci"] = rho_ci(float(r["rho"]), float(r["rho_lo"]), float(r["rho_hi"]))
         w[key + ".rho_n"] = n_eq(int(r["rho_n"]))
         w[key + ".rho_context"] = f"{rho(float(r['rho']))} under {r['rule']}"
@@ -439,7 +456,7 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     # ---- headline phrasing of values that the tables give bare
     sat_top = max(sat, key=lambda r: float(r["share_ge_0.95"]))
     k_top = round(float(sat_top["share_ge_0.95"]) * int(sat_top["n_computable"]))
-    w["q2.max_share_ge_0.95.k_of_n"] = k_of_n_pct(k_top, int(sat_top["n_computable"]))
+    w["q2.max_share_ge_0.95.k_of_n"] = k_of_n_pct(k_top, int(sat_top["n_computable"]), count_pct)
     m = q3_measure(root)
     w["q3.age"] = f"{count(m['age'])} years"
     w["q3.per"] = f"per {count(m['per'])}"
@@ -478,7 +495,7 @@ def catalogue(root: Path = ROOT) -> dict[str, str]:
     for col, key in (("died", "died"), ("lost_to_follow_up", "ltfu")):
         k = int(nat[col])
         shares = [int(r[col]) / int(r["cohort_notified"]) for r in st]
-        w[f"ctx.{key}.national"] = (k_of_n_pct(k, n_nat) if key == "died"
+        w[f"ctx.{key}.national"] = (k_of_n_pct(k, n_nat, count_pct) if key == "died"
                                     else f"{count(k)} ({pct(k, n_nat)})")
         w[f"ctx.{key}.states"] = (f"median {pct(statistics.median(shares), 1)} (range "
                                   f"{rng(pct(min(shares), 1), pct(max(shares), 1))})")
@@ -559,9 +576,10 @@ ABSTRACT_REQUIRED = [
 ]
 
 
-def want(root: Path = ROOT, required: list[str] = REQUIRED) -> dict[str, str]:
+def want(root: Path = ROOT, required: list[str] = REQUIRED,
+         count_pct: str = COUNT_PCT) -> dict[str, str]:
     """label -> expected string that the manuscript must contain (the REQUIRED labels)."""
-    cat = catalogue_cached(root)
+    cat = catalogue_cached(root, count_pct)
     out: dict[str, str] = {}
     for pat in required:
         hits = fnmatch.filter(cat, pat)
@@ -593,6 +611,11 @@ ALLOW = [
     r"\bQ[1-4]\b",
     r"\bClaude Opus \d+(?:\.\d+)?\b",  # the AI model's name (Methods disclosure)
 ]
+# Supplementary items of an online supplement ("Supplementary Tables S3 and S4")
+SUPP_NO = r"S\d+" + END
+ALLOW_SUPPLEMENT = rf"\bSupplementary (?:Table|Figure)s? {SUPP_NO}(?:(?:–| and |, ){SUPP_NO})*"
+# the item numbers of a numbered list whose items open in bold ("1. **Publish ...**")
+ALLOW_LIST = r"(?m)^[1-9]\. (?=\*\*)"
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 # a number token of the skeleton: thousands separators kept, list commas not ("4,5" is two)
 SKEL_NUMBER = re.compile(r"\d+(?:,\d{3}(?!\d))*(?:\.\d+)?")
@@ -633,15 +656,19 @@ def prose(text: str) -> str:
 
 
 def section(text: str, heading: str) -> str:
-    """The lines under a '#' heading, up to the next heading of any level ('' if absent)."""
-    out, inside = [], False
+    """The lines under a '#' heading, up to the next heading of the same or a higher level
+    ('' if absent). Heading lines of lower levels inside it (the Discussion's '###'
+    sub-headings) are left out; their text is kept."""
+    out, level = [], 0
     for ln in text.splitlines():
-        if re.match(r"^#+\s", ln):
-            if inside:
+        m = re.match(r"^(#+)\s", ln)
+        if m:
+            if level and len(m.group(1)) <= level:
                 break
-            inside = re.match(rf"^#+\s*{re.escape(heading)}\b", ln) is not None
+            if not level and re.match(rf"^#+\s*{re.escape(heading)}\b", ln):
+                level = len(m.group(1))
             continue
-        if inside:
+        if level:
             out.append(ln)
     return "\n".join(out)
 
@@ -656,23 +683,32 @@ def unaccounted(text: str, wants: dict[str, str], allow: list[str] = ALLOW) -> l
     return NUMBER.findall(t)
 
 
-def stale_tables(root: Path) -> str | None:
-    """Return a message if manuscript/tables.md differs from a fresh make_tables rendering."""
+def _render_tables(root: Path, profile_name: str) -> str:
     script = root / "exhibits" / "make_tables.py"
-    tables = root / "manuscript" / "tables.md"
-    if not (script.exists() and tables.exists()):
-        return None
     spec = importlib.util.spec_from_file_location("make_tables", script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    if mod.render(root) != tables.read_text(encoding="utf-8"):
-        return "manuscript/tables.md is stale: re-run python -I exhibits/make_tables.py"
+    return mod.render(root) if profile_name == "ijmr" else mod.render(root, profile_name)
+
+
+def stale_tables(root: Path, profile: "Profile | None" = None) -> str | None:
+    """Return a message if the profile's tables.md differs from a fresh make_tables rendering."""
+    profile = profile or IJMR
+    script = root / "exhibits" / "make_tables.py"
+    tables = root / profile.dir / "tables.md"
+    if not (script.exists() and tables.exists()):
+        return None
+    if _render_tables(root, profile.name) != tables.read_text(encoding="utf-8"):
+        flag = "" if profile.name == "ijmr" else f" --profile {profile.name}"
+        return (f"{profile.dir}/tables.md is stale: re-run "
+                f"python -I exhibits/make_tables.py{flag}")
     return None
 
 
-def tables_not_inserted(root: Path, text: str) -> str | None:
+def tables_not_inserted(root: Path, text: str, profile: "Profile | None" = None) -> str | None:
     """Return a message if manuscript.md does not carry tables.md verbatim (comments aside)."""
-    tables = root / "manuscript" / "tables.md"
+    profile = profile or IJMR
+    tables = root / profile.dir / "tables.md"
     if not tables.exists():
         return None
     body = "\n".join(ln for ln in tables.read_text(encoding="utf-8").splitlines()
@@ -760,10 +796,184 @@ ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
 # 2022 and 2023, survey span 2019-21). Every other year in a checked section must be one of:
 YEARS_ALLOWED = {"2019", "2021", "2022", "2023", "2024"}
 
+# The Journal of Public Health (JPH) version: the same numbers and phrases, with the exhibits
+# renumbered (Table 1 in the text; Supplementary Tables S1-S7 and Supplementary Figure S1
+# online) and the Results giving the key numbers of the tables that moved online.
+_JPH_RENAME = (
+    ("(Table I)", "(Supplementary Table S1)"),
+    ("(Table III)", "(Table 1)"),
+    ("Web tables 1 and 2", "Supplementary Tables S3 and S4"),
+    ("Web table 3", "Supplementary Table S5"),
+    ("(Table IV, Figure 3)", "(Supplementary Table S6, Figure 2)"),
+    ("(Table IV, Figure 4)", "(Supplementary Table S6, Figure 3)"),
+    ("Web table 4", "Supplementary Table S7"),
+)
+
+
+def _renamed(phrases: list[str]) -> list[str]:
+    out = []
+    for ph in phrases:
+        for old, new in _JPH_RENAME:
+            ph = ph.replace(old, new)
+        out.append(ph)
+    return out
+
+
+JPH_SECTION_REQUIRED: dict[str, list[str]] = {
+    "Abstract": [ph.replace("Two indicators ({q1.missing_points})",
+                            "two indicators ({q1.missing_points}) unpublished")
+                 for ph in SECTION_REQUIRED["Abstract"]] + [
+        "Association with prevalence was not established: ρ {q3.R2.primary.rho_ci}",
+        "To our knowledge",
+    ],
+    "Methods": list(SECTION_REQUIRED["Methods"]),
+    "Results": _renamed(SECTION_REQUIRED["Results"]) + [
+        "No rule was admissible (Supplementary Table S2): the residual lay in the band for "
+        "{q1.R1.in_band} states under R1 and {q1.R3.in_band} under R3",
+        "Supplementary Figure S1 shows how often",
+        "With MDR/RR-TB treatment success, an outcome outside the score, ρ was "
+        "{q3.R2.secondary.rho_ci}, {q3.R2.secondary.n}",
+        "Without indicator 1, the count was {q4.R2.no1.exceeds}",
+        "The 2022 score was not clearly associated with the change: ρ {q4.R2.all.rho_ci}, "
+        "{q4.R2.all.rho_n}",
+    ],
+    "Discussion": list(SECTION_REQUIRED["Discussion"]) + [
+        "; Supplementary Table S2 footnote)", "(Supplementary Figure S1)",
+    ],
+}
+
+
+# --------------------------------------------------------------------------------------
+# Profiles: the journal-specific constants of a manuscript directory
+# --------------------------------------------------------------------------------------
+ARABIC_IJMR = r"\d+(?![\d.]\d)"  # "Table 11.2" is a table of the source report, not ours
+ARABIC = r"\d+\b(?!\.\d)"  # the same, and "Table 11.2" cannot be read as "Table 1"
+
+
+@dataclass(frozen=True)
+class Exhibit:
+    """One kind of exhibit: how the text cites it and how its caption is found."""
+    kind: str  # "Table", "Figure", "Web table", "Supplementary Table", ...
+    cite: str  # the citing word(s), singular or plural ("Tables?")
+    item: str  # one cited number ("[IVX]+\b", ARABIC, "S\d+")
+    roman: bool  # Roman numerals (IJMR tables)
+    caption: str  # regex of the caption label, group 1 the number
+    expected: tuple[int, ...]  # the numbers that must exist
+    main: bool  # a main-text display item (counts towards the display limit)
+
+
+@dataclass(frozen=True)
+class Profile:
+    """Journal-specific constants of one manuscript directory."""
+    name: str
+    dir: str  # relative to the repository root
+    section_order: tuple[str, ...]
+    section_required: dict
+    exhibits: tuple[Exhibit, ...]
+    display_limits: tuple[tuple[tuple[str, ...], int], ...]  # (kinds, maximum in the text)
+    count_pct: str  # the "n of N (x%)" style
+    allow: tuple[str, ...]
+    label_strip: str  # legend labels left out of the citation scan
+    supplement_heading: str  # heading of the online tables in tables.md
+    required_headings: tuple[str, ...] = ()  # sub-headings the text must carry
+    abstract_headings: tuple[str, ...] = ()  # run-in headings the abstract must carry
+    # the submission documents and their limits (Microsoft Word's counts)
+    ms_docx: str = "02_blinded_manuscript.docx"
+    title_docx: str = "01_first_page.docx"
+    title_md: str = "first_page.md"
+    abstract_max: int = 250
+    main_min: int = 0
+    main_max: int = 3000
+    # further (docx, section) pairs whose number tokens must equal manuscript.md's
+    docx_extra: tuple[tuple[str, str], ...] = ()
+
+
+IJMR = Profile(
+    name="ijmr",
+    dir="manuscript",
+    section_order=SECTION_ORDER,
+    section_required=SECTION_REQUIRED,
+    exhibits=(
+        Exhibit("Table", "Tables?", r"[IVX]+\b", True, r"(?m)^\*\*Table ([IVX]+)\.",
+                (1, 2, 3, 4), True),
+        Exhibit("Figure", "Figures?", ARABIC_IJMR, False, r"(?m)^\*\*Figure (\d+)\.\*\*",
+                (1, 2, 3, 4), True),
+        Exhibit("Web table", "Web tables?", ARABIC_IJMR, False, r"(?m)^\*\*Web table (\d+)\.",
+                (1, 2, 3, 4), False),
+    ),
+    display_limits=((("Table",), 4), (("Figure",), 4)),  # IJMR: up to 4 tables and 4 figures
+    count_pct=COUNT_PCT,
+    allow=tuple(ALLOW),
+    label_strip=r"(?m)^\*\*(?:Figure|Table|Web table) [IVX\d]+\.\*\*",
+    supplement_heading="# Web tables",
+)
+
+JPH = Profile(
+    name="jph",
+    dir="manuscript/jph_v2",
+    section_order=SECTION_ORDER + ("Supplementary figure",),
+    section_required=JPH_SECTION_REQUIRED,
+    exhibits=(
+        Exhibit("Table", "Tables?", ARABIC, False, r"(?m)^\*\*Table (\d+)\.", (1,), True),
+        Exhibit("Figure", "Figures?", ARABIC, False, r"(?m)^\*\*Figure (\d+)\.\*\*",
+                (1, 2, 3), True),
+        Exhibit("Supplementary Table", "Supplementary Tables?", r"S\d+\b", False,
+                r"(?m)^\*\*Supplementary Table S(\d+)\.", tuple(range(1, 8)), False),
+        Exhibit("Supplementary Figure", "Supplementary Figures?", r"S\d+\b", False,
+                r"(?m)^\*\*Supplementary Figure S(\d+)\.\*\*", (1,), False),
+    ),
+    display_limits=((("Table", "Figure"), 4),),  # JPH: "no more than 4 tables or figures"
+    # JPH states no number style; IJMR's is kept so that no number changes
+    count_pct=COUNT_PCT,
+    allow=tuple(ALLOW) + (ALLOW_SUPPLEMENT, ALLOW_LIST),
+    label_strip=r"(?m)^\*\*(?:Supplementary )?(?:Figure|Table) S?\d+\.\*\*",
+    supplement_heading="# Supplementary tables",
+    required_headings=("### Main finding of this study", "### What is already known on this topic",
+                       "### What this study adds", "### Limitations of this study"),
+    abstract_headings=("**Background:**", "**Methods:**", "**Results:**", "**Conclusions:**"),
+    ms_docx="02_manuscript_anonymised.docx",
+    title_docx="01_title_page.docx",
+    title_md="title_page.md",
+    abstract_max=200,
+    main_min=2000,
+    main_max=3000,
+    docx_extra=(("06_supplementary_material.docx", "Supplementary figure"),),
+)
+
+PROFILES = {p.name: p for p in (IJMR, JPH)}
+
+
+def profile_for(manuscript_dir: str | None = None, name: str | None = None) -> Profile:
+    """The profile named, or the one whose directory is manuscript_dir (default IJMR)."""
+    if name:
+        if name not in PROFILES:
+            raise SystemExit(f"unknown profile {name!r}: one of {sorted(PROFILES)}")
+        return PROFILES[name]
+    if manuscript_dir is None:
+        return IJMR
+    md = Path(manuscript_dir)
+    if md.is_absolute() and md.resolve().is_relative_to(ROOT):
+        md = md.resolve().relative_to(ROOT)
+    d = md.as_posix().strip("/").removeprefix("./")
+    for p in PROFILES.values():
+        if p.dir == d:
+            return p
+    raise SystemExit(f"no profile for {manuscript_dir!r}: pass --profile "
+                     f"({', '.join(sorted(PROFILES))})")
+
+
+def cli_profile(argv: list[str], root: Path = ROOT) -> tuple[Profile, Path]:
+    """(profile, manuscript directory) from --manuscript-dir and --profile in argv."""
+    def opt(flag: str) -> str | None:
+        return argv[argv.index(flag) + 1] if flag in argv else None
+    d = opt("--manuscript-dir")
+    prof = profile_for(d, opt("--profile"))
+    return prof, root / (d if d is not None else prof.dir)
+
 
 @lru_cache(maxsize=4)
-def catalogue_cached(root: Path) -> dict[str, str]:
-    return catalogue(root)
+def catalogue_cached(root: Path, count_pct: str = COUNT_PCT) -> dict[str, str]:
+    return catalogue(root, count_pct)
 
 
 def fill(template: str, cat: dict[str, str]) -> str:
@@ -775,11 +985,12 @@ def squash(s: str) -> str:
     return re.sub(r"\s+", " ", s)
 
 
-def phrase_problems(text: str, root: Path) -> list[str]:
+def phrase_problems(text: str, root: Path, profile: Profile | None = None) -> list[str]:
     """Required whole phrases missing from their own section."""
-    cat = catalogue_cached(root)
+    profile = profile or IJMR
+    cat = catalogue_cached(root, profile.count_pct)
     out = []
-    for sec, phrases in SECTION_REQUIRED.items():
+    for sec, phrases in profile.section_required.items():
         body = squash(section(text, sec))
         for ph in phrases:
             want_s = squash(fill(ph, cat))
@@ -802,20 +1013,23 @@ def skel_spans(s: str) -> list[tuple[int, int, str]]:
     return sorted(out)
 
 
-def skeleton(text: str) -> dict[str, list[str]]:
+def skeleton(text: str, order: tuple[str, ...] = SECTION_ORDER) -> dict[str, list[str]]:
     """The ordered tokens of each checked section, nothing masked."""
-    return {sec: [t for _, _, t in skel_spans(section(text, sec))] for sec in SECTION_ORDER}
+    return {sec: [t for _, _, t in skel_spans(section(text, sec))] for sec in order}
 
 
-def skeleton_problems(text: str, root: Path) -> list[str]:
-    path = root / "manuscript" / SKELETON
+def skeleton_problems(text: str, root: Path, profile: Profile | None = None,
+                      ms_dir: Path | None = None) -> list[str]:
+    profile = profile or IJMR
+    path = (ms_dir or root / profile.dir) / SKELETON
     if not path.exists():
+        flag = "" if profile.name == "ijmr" else f" --manuscript-dir {profile.dir}"
         return [f"{SKELETON} missing: after review run "
-                "python -I verification/check_manuscript_numbers.py --regenerate"]
+                f"python -I verification/check_manuscript_numbers.py{flag} --regenerate"]
     gold = json.loads(path.read_text(encoding="utf-8"))
-    now = skeleton(text)
+    now = skeleton(text, profile.section_order)
     out = []
-    for sec in SECTION_ORDER:
+    for sec in profile.section_order:
         a, b = gold.get(sec, []), now[sec]
         if a != b:
             k = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
@@ -827,7 +1041,8 @@ def skeleton_problems(text: str, root: Path) -> list[str]:
 
 
 def _nums(group: str, roman: bool) -> list[int]:
-    """'I', 'I and II', 'I–IV' or '1, 2' to integers (a dash is an inclusive range)."""
+    """'I', 'I and II', 'I–IV', '1, 2' or 'S3–S5' to integers (a dash is an inclusive
+    range)."""
     toks = re.findall(r"[IVX]+|\d+", group)
     vals = [ROMAN.get(t, 0) if roman else int(t) for t in toks]
     if "–" in group and len(vals) == 2:
@@ -835,32 +1050,37 @@ def _nums(group: str, roman: bool) -> list[int]:
     return vals
 
 
-def citations(text: str) -> dict[str, list[int]]:
+def citations(text: str, profile: Profile | None = None) -> dict[str, list[int]]:
     """Exhibit citations in reading order, by type, from the prose (Abstract to Legends)."""
+    profile = profile or IJMR
     t = prose(text)
-    t = re.sub(r"(?m)^\*\*(?:Figure|Table|Web table) [IVX\d]+\.\*\*", " ", t)  # legend labels
+    t = re.sub(profile.label_strip, " ", t)  # legend labels
     t = re.sub(r"(?m)^#+.*$", " ", t)
-    found: dict[str, list[int]] = {"Table": [], "Figure": [], "Web table": []}
-    arabic = r"\d+(?![\d.]\d)"  # "Table 11.2" is a table of the source report, not ours
-    for word, kind, item in (("Web tables?", "Web table", arabic),
-                             ("Tables?", "Table", r"[IVX]+\b"), ("Figures?", "Figure", arabic)):
-        pat = re.compile(rf"(?<!Web )\b{word} ({item}(?:(?:–| and |, ){item})*)")
+    found: dict[str, list[int]] = {e.kind: [] for e in profile.exhibits}
+    for e in profile.exhibits:
+        item = e.item
+        pat = re.compile(rf"(?<!Web )(?<!Supplementary )\b{e.cite} "
+                         rf"({item}(?:(?:–| and |, ){item})*)")
         for m in pat.finditer(t):
-            found[kind] += _nums(m.group(1), kind == "Table")
+            found[e.kind] += _nums(m.group(1), e.roman)
     return found
 
 
-def exhibit_problems(text: str) -> list[str]:
-    """Cited exhibits exist, are first cited in ascending order, and each is cited."""
+def exhibit_problems(text: str, profile: Profile | None = None) -> list[str]:
+    """Cited exhibits exist, are first cited in ascending order, and each is cited; the
+    main-text display items are within the journal's limits."""
+    profile = profile or IJMR
     out = []
-    have = {
-        "Table": {ROMAN[r] for r in re.findall(r"(?m)^\*\*Table ([IVX]+)\.", text) if r in ROMAN},
-        "Figure": {int(n) for n in re.findall(r"(?m)^\*\*Figure (\d+)\.\*\*", text)},
-        "Web table": {int(n) for n in re.findall(r"(?m)^\*\*Web table (\d+)\.", text)},
-    }
-    for kind, nums in citations(text).items():
-        if have[kind] != {1, 2, 3, 4}:
-            out.append(f"EXHIBITS: {kind} captions found {sorted(have[kind])}, expected 1-4")
+    have = {}
+    for e in profile.exhibits:
+        nums = re.findall(e.caption, text)
+        have[e.kind] = ({ROMAN[r] for r in nums if r in ROMAN} if e.roman
+                        else {int(n) for n in nums})
+    expected = {e.kind: set(e.expected) for e in profile.exhibits}
+    for kind, nums in citations(text, profile).items():
+        if have[kind] != expected[kind]:
+            lo, hi = min(expected[kind]), max(expected[kind])
+            out.append(f"EXHIBITS: {kind} captions found {sorted(have[kind])}, expected {lo}-{hi}")
         bad = sorted({n for n in nums if n not in have[kind]})
         if bad:
             out.append(f"EXHIBITS: {kind} {bad} cited but not present")
@@ -870,12 +1090,36 @@ def exhibit_problems(text: str) -> list[str]:
         never = sorted(have[kind] - set(nums))
         if never:
             out.append(f"EXHIBITS: {kind} {never} never cited in the text")
+    for kinds, limit in profile.display_limits:
+        n = sum(len(have[k]) for k in kinds)
+        if n > limit:
+            out.append(f"EXHIBITS: {n} {' and '.join(kinds)} items in the text, limit {limit}")
     return out
 
 
-def label_problems(text: str, root: Path) -> list[str]:
+def structure_problems(text: str, profile: Profile | None = None) -> list[str]:
+    """The sub-headings and abstract headings that the journal requires."""
+    profile = profile or IJMR
+    out = []
+    disc = text.split("\n## Discussion", 1)[1].split("\n## ", 1)[0] if "\n## Discussion" in text else ""
+    lines = [ln.strip() for ln in disc.splitlines()]
+    pos = [lines.index(h) if h in lines else -1 for h in profile.required_headings]
+    for h, p in zip(profile.required_headings, pos):
+        if p < 0:
+            out.append(f"STRUCTURE: Discussion sub-heading missing: {h!r}")
+    if all(p >= 0 for p in pos) and pos != sorted(pos):
+        out.append("STRUCTURE: Discussion sub-headings out of the required order")
+    abstract = section(text, "Abstract")
+    for h in profile.abstract_headings:
+        if not re.search(rf"(?m)^{re.escape(h)}", abstract):
+            out.append(f"STRUCTURE: abstract heading missing: {h!r}")
+    return out
+
+
+def label_problems(text: str, root: Path, profile: Profile | None = None) -> list[str]:
     """Q in 1-4, R in 1-4 (R4 is the threshold-band rule, stated untestable), indicators
     in 1-9, and years from the data-tied set."""
+    profile = profile or IJMR
     t = re.sub(r"(?m)^#+.*$", " ", prose(text))
     out = []
     for q in re.findall(r"\bQ(\d+)", t):
@@ -888,8 +1132,9 @@ def label_problems(text: str, root: Path) -> list[str]:
         for n in re.findall(r"\d+", m.group(1)):
             if not 1 <= int(n) <= 9:
                 out.append(f"LABEL: indicator {n} outside 1-9")
-    reg_years = set(re.findall(r"\b20\d\d\b", catalogue_cached(root)["methods.registration"]))
-    for sec in SECTION_ORDER:
+    reg_years = set(re.findall(r"\b20\d\d\b",
+                               catalogue_cached(root, profile.count_pct)["methods.registration"]))
+    for sec in profile.section_order:
         body = section(text, sec).replace("2019–21", " ").replace("score year 2020", " ")  # pinned above
         for y in re.findall(r"(?<![\d.,])(20\d\d)(?!\d)", body):
             if y not in YEARS_ALLOWED | reg_years:
@@ -897,50 +1142,63 @@ def label_problems(text: str, root: Path) -> list[str]:
     return out
 
 
-def problems(root: Path, text: str) -> list[str]:
+def problems(root: Path, text: str, profile: Profile | None = None,
+             ms_dir: Path | None = None) -> list[str]:
     """Every problem found in `text` taken as the manuscript (empty if clean)."""
+    profile = profile or IJMR
+    cp = profile.count_pct
     out = []
-    for label, v in missing(text, want(root)):
+    for label, v in missing(text, want(root, count_pct=cp)):
         out.append(f"MISSING {label}: {v!r}")
     abstract = section(text, "Abstract")
     if not abstract.strip():
         out.append("MISSING the abstract (no '## Abstract' section)")
     else:
-        for label, v in missing(abstract, want(root, ABSTRACT_REQUIRED)):
+        for label, v in missing(abstract, want(root, ABSTRACT_REQUIRED, cp)):
             out.append(f"MISSING in the abstract {label}: {v!r}")
-    for n in unaccounted(text, catalogue_cached(root)):
+    for n in unaccounted(text, catalogue_cached(root, cp), list(profile.allow)):
         out.append(f"UNACCOUNTED number in prose: {n!r}")
-    out += phrase_problems(text, root)
-    out += exhibit_problems(text)
-    out += label_problems(text, root)
-    out += skeleton_problems(text, root)
-    for msg in (stale_tables(root), tables_not_inserted(root, text)):
+    out += phrase_problems(text, root, profile)
+    out += exhibit_problems(text, profile)
+    out += structure_problems(text, profile)
+    out += label_problems(text, root, profile)
+    out += skeleton_problems(text, root, profile, ms_dir)
+    for msg in (stale_tables(root, profile), tables_not_inserted(root, text, profile)):
         if msg:
             out.append(msg)
     return out
 
 
 def main(root: Path = ROOT, argv: list[str] | None = None) -> int:
+    """Options: --manuscript-dir DIR (default manuscript) and --profile NAME (default: the
+    profile whose directory is DIR: ijmr for manuscript, jph for manuscript/jph_v2)."""
     argv = sys.argv[1:] if argv is None else argv
+    profile, ms_dir = cli_profile(argv, root)
     if not (root / "manuscript").is_dir():
         print(SKIP_DIR)
         return 0
-    ms = root / "manuscript" / "manuscript.md"
+    if profile is not IJMR and not ms_dir.is_dir():
+        print(f"SKIPPED: {profile.dir}/ not present")
+        return 0
+    ms = ms_dir / "manuscript.md"
     if not ms.exists():
         print(SKIP_MS)
         return 0
     text = ms.read_text(encoding="utf-8")
+    rel = ms_dir.relative_to(root).as_posix() if ms_dir.is_relative_to(root) else str(ms_dir)
     if "--regenerate" in argv:
-        gold = skeleton(text)
-        (root / "manuscript" / SKELETON).write_text(
+        gold = skeleton(text, profile.section_order)
+        (ms_dir / SKELETON).write_text(
             json.dumps(gold, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"wrote manuscript/{SKELETON}: " + ", ".join(f"{k} {len(v)}" for k, v in gold.items()))
+        print(f"wrote {rel}/{SKELETON}: " + ", ".join(f"{k} {len(v)}" for k, v in gold.items()))
         return 0
-    found = problems(root, text)
+    found = problems(root, text, profile, ms_dir)
     for ln in found:
         print(ln)
-    n_ph = sum(len(v) for v in SECTION_REQUIRED.values())
-    print(f"{len(want(root))} expected strings ({len(want(root, ABSTRACT_REQUIRED))} in the "
+    n_ph = sum(len(v) for v in profile.section_required.values())
+    cp = profile.count_pct
+    print(f"{len(want(root, count_pct=cp))} expected strings "
+          f"({len(want(root, ABSTRACT_REQUIRED, cp))} in the "
           f"abstract), {n_ph} section phrases; {len(found)} problem(s)")
     return 1 if found else 0
 

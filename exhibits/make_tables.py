@@ -1,6 +1,6 @@
 """Render every manuscript table from outputs/ and data/ to manuscript/tables.md.
 
-Run as: python -I exhibits/make_tables.py   (from the repository root)
+Run as: python -I exhibits/make_tables.py [--profile ijmr|jph]   (from the repository root)
 
 The manuscript itself is kept private until an editorial decision (manuscript/ is not in
 the repository); this script is deposited so that every table can be regenerated from the
@@ -16,6 +16,11 @@ of leaving a stale phrase.
 IJMR (Instructions for Authors): tables numbered with Roman numerals; 3-5 columns and 4-16
 rows for the four main tables; footnote symbols *, dagger, double dagger, section;
 items that do not fit go online as web tables.
+
+Profiles (--profile): "ijmr" (default) writes manuscript/tables.md as above. "jph" (Journal of
+Public Health) writes manuscript/jph_v2/tables.md with the same tables and numbers, numbered
+in Arabic numerals: Table 1 (robustness) in the text, and Supplementary Tables S1-S7 online
+in first-citation order. LABELS holds each profile's exhibit names and order.
 """
 from __future__ import annotations
 
@@ -39,6 +44,42 @@ from verification.check_manuscript_numbers import (  # noqa: E402
 )
 
 FOOT = ["*", "†", "‡", "§", "‖", "¶"]
+
+# Exhibit names by profile. Keys: ind (indicators), repro (Q1 by rule), robust (Q2, primary
+# rule), valid (Q3 and Q4 by rule), rob_R1 / rob_R3 (Q2 under the other rules), resid (Q1
+# residuals by state), scores (Q4 scores by state), and the figures. "order" is the order of
+# the blocks ("SUPP" is the heading of the online tables), "main" the main-text tables.
+LABELS = {
+    "ijmr": {
+        "ind": "Table I", "repro": "Table II", "robust": "Table III", "valid": "Table IV",
+        "rob_R1": "Web table 1", "rob_R3": "Web table 2", "resid": "Web table 3",
+        "scores": "Web table 4", "fig_resid": "Figure 1", "fig_change": "Figure 4",
+        "data": "data sharing statement", "SUPP": "# Web tables",
+        "order": ("ind", "repro", "robust", "valid", "SUPP", "rob_R1", "rob_R3", "resid",
+                  "scores"),
+        "main": ("ind", "repro", "robust", "valid"),
+        "out": "manuscript/tables.md",
+    },
+    "jph": {
+        "ind": "Supplementary Table S1", "repro": "Supplementary Table S2", "robust": "Table 1",
+        "rob_R1": "Supplementary Table S3", "rob_R3": "Supplementary Table S4",
+        "resid": "Supplementary Table S5", "valid": "Supplementary Table S6",
+        "scores": "Supplementary Table S7", "fig_resid": "Figure 1", "fig_change": "Figure 3",
+        "data": "Data Availability Statement", "SUPP": "# Supplementary tables",
+        "order": ("robust", "SUPP", "ind", "repro", "rob_R1", "rob_R3", "resid", "valid",
+                  "scores"),
+        "main": ("robust",),
+        "out": "manuscript/jph_v2/tables.md",
+    },
+}
+IJMR_LABELS = LABELS["ijmr"]
+
+
+def both(a: str, b: str) -> str:
+    """'Tables III and IV' for two tables of one kind, else 'Table 1 and Supplementary Table S6'."""
+    if a.startswith("Table ") and b.startswith("Table "):
+        return f"Tables {a.split(' ', 1)[1]} and {b.split(' ', 1)[1]}"
+    return f"{a} and {b}"
 TIMES = "×"
 ALPHA = "α"
 RHO = "ρ"
@@ -159,7 +200,7 @@ def mismatch_cell(ch: dict, defs: list[dict], i: int) -> str:
     return "; ".join(out) if out else "—"
 
 
-def table1(root: Path) -> str:
+def table1(root: Path, L: dict = IJMR_LABELS) -> str:
     ind = plan_indicators(root)
     ch = choices(root)
     defs = read_csv(root / "data" / "extracted" / "definitions.csv")
@@ -185,21 +226,21 @@ def table1(root: Path) -> str:
         f"{listing([str(i) for i in miss22])}).",
         f"†The state benchmark of CTD's universal drug-susceptibility testing page: "
         f"{num(100 * UDST_BENCHMARK, 0)}% of net notified patients.",
-        "‡See Table II, footnote *.",
+        f"‡See {L['repro']}, footnote *.",
         "HIV, human immunodeficiency virus; IPT, isoniazid preventive therapy; MDR/RR-TB, "
         "multidrug- or rifampicin-resistant TB; PLHIV, people living with HIV; ROP, Record "
         "of Proceedings; TPT, TB preventive treatment; UDST, universal drug-susceptibility "
         "testing; y, years.",
     ]
-    return block("Table I. The nine indicators of the State TB Score and their sources",
+    return block(f"{L['ind']}. The nine indicators of the State TB Score and their sources",
                  ["Indicator", "Points", "Score year 2023*", "Score year 2022*",
-                  "Noted mismatch"], rows, notes)
+                  "Noted mismatch"], rows, notes, "ind" in L["main"])
 
 
 # --------------------------------------------------------------------------------------
 # Table II: Q1 by rule
 # --------------------------------------------------------------------------------------
-def table2(root: Path) -> str:
+def table2(root: Path, L: dict = IJMR_LABELS) -> str:
     sel = q1_selection(root)
     mp = sel["missing_points"]
     rows = []
@@ -237,17 +278,18 @@ def table2(root: Path) -> str:
         f"every state is inside. Violation: distance of a residual outside the band.",
         f"‡Verdict over R1{EN_DASH}R4: {sel['verdict']}. {listing(sel['excluded'])} "
         f"excluded (indicator 5 not computable); n = {count(n)}. {sel['chosen']} has the "
-        f"smallest maximum violation and is carried into Tables III and IV. Outside the band "
+        f"smallest maximum violation and is carried into {both(L['robust'], L['valid'])}. "
+        f"Outside the band "
         f"under {sel['chosen']} ({count(len(outside))} states): {listing(outside)}; under the "
-        f"other rules, see Web table 3.",
+        f"other rules, see {L['resid']}.",
         "§No Central TB Division document states threshold bands for R4.",
         "R1, proportional, capped at the indicator's maximum; R2, proportional, uncapped; "
         "R3, relative to the best state; R4, threshold bands.",
     ]
-    return block("Table II. Reproducing the published 2023 scores, by scoring rule*",
+    return block(f"{L['repro']}. Reproducing the published 2023 scores, by scoring rule*",
                  ["Rule", "States inside the band†, n of N",
                   "Maximum violation (points)", "Residual range (points)",
-                  "Admissible‡"], rows, notes)
+                  "Admissible‡"], rows, notes, "repro" in L["main"])
 
 
 # --------------------------------------------------------------------------------------
@@ -344,7 +386,7 @@ def table3(root: Path, rule: str, title: str, main: bool) -> str:
 # --------------------------------------------------------------------------------------
 # Table IV: Q3 and Q4 by rule
 # --------------------------------------------------------------------------------------
-def table4(root: Path) -> str:
+def table4(root: Path, L: dict = IJMR_LABELS) -> str:
     sel = q1_selection(root)
     rules = ["R1", "R2", "R3"]
     q3 = read_csv(root / "outputs" / "q3_2023_summary.csv")
@@ -419,19 +461,20 @@ def table4(root: Path) -> str:
         "ICMR, Indian Council of Medical Research; MDR/RR-TB, multidrug- or "
         "rifampicin-resistant TB; NTPS, National TB Prevalence Survey; y, years.",
     ]
-    return block("Table IV. Validity (Q3, score year 2023) and change over time "
+    return block(f"{L['valid']}. Validity (Q3, score year 2023) and change over time "
                  "(Q4, 2022 to 2023), by scoring rule",
-                 ["Measure"] + [r + (" (primary)" if r == sel["chosen"] else "") for r in rules], rows, notes)
+                 ["Measure"] + [r + (" (primary)" if r == sel["chosen"] else "") for r in rules], rows, notes,
+                 "valid" in L["main"])
 
 
 # --------------------------------------------------------------------------------------
 # Web tables 3-4: per-state values
 # --------------------------------------------------------------------------------------
 REPO_NOTE = ("Per-state values for every rule are in the deposited per-state output files "
-             "(see the data sharing statement).")
+             "(see the {data}).")
 
 
-def web_q1(root: Path) -> str:
+def web_q1(root: Path, L: dict = IJMR_LABELS) -> str:
     """R1 and R3 residuals only; the primary-rule residual is what Figure 1 plots, and
     IJMR forbids the same data in tabular and graphic form."""
     sel = q1_selection(root)
@@ -447,17 +490,17 @@ def web_q1(root: Path) -> str:
     mp = sel["missing_points"]
     notes = [f"Residual = published {MINUS} rebuilt partial score (points); the published "
              f"score (India TB Report 2024, Table 11.2) is given for reference. Rule "
-             f"{sel['chosen']} is shown in Figure 1. *Outside the admissibility band "
+             f"{sel['chosen']} is shown in {L['fig_resid']}. *Outside the admissibility band "
              f"({MINUS}{num(TOL, 2)} to {count(mp)} + {num(TOL, 2)} points). "
              f"{listing(sel['excluded'])}: indicator 5 not computable.",
-             REPO_NOTE.format(f="outputs/q1_2023.csv")]
-    return block(f"Web table 3. Residual of the published 2023 score by state, rules "
+             REPO_NOTE.format(data=L["data"])]
+    return block(f"{L['resid']}. Residual of the published 2023 score by state, rules "
                  f"{listing(rules)}",
                  ["State or union territory", "Published score"]
                  + [f"Residual, {r}" for r in rules], rows, notes, main=False)
 
 
-def web_q4(root: Path) -> str:
+def web_q4(root: Path, L: dict = IJMR_LABELS) -> str:
     """2022 and 2023 rebuilt scores with their SEs, per rule and indicator set. The
     change, threshold and verdict are what Figure 4 plots, so they are not repeated."""
     sel = q1_selection(root)
@@ -486,46 +529,55 @@ def web_q4(root: Path) -> str:
             rows.append(row)
     notes = [f"Rebuilt score (rescaled partial score), standard error (SE) in parentheses. "
              f"The change between the years under {sel['chosen']}, indicators "
-             f"{sets[0].replace(',', ', ')}, is shown in Figure 4.",
+             f"{sets[0].replace(',', ', ')}, is shown in {L['fig_change']}.",
              "†Union territory."]
     if over:
         over = sorted(over)
         notes.append(f"{listing(over)} {'is' if len(over) == 1 else 'are'} uncapped; "
                      f"scores can exceed 100.")
-    notes.append(REPO_NOTE.format(f="outputs/q4_2022_2023_states.csv"))
+    notes.append(REPO_NOTE.format(data=L["data"]))
     header = ["State or union territory"] + [f"{r}, {y}" for r in rules
                                              for y in ("2022", "2023")]
-    return block("Web table 4. Rebuilt scores for score years 2022 and 2023 (SE), by rule "
+    return block(f"{L['scores']}. Rebuilt scores for score years 2022 and 2023 (SE), by rule "
                  "and indicator set", header, rows, notes, main=False)
 
 
 # --------------------------------------------------------------------------------------
-def render(root: Path = ROOT) -> str:
+def render(root: Path = ROOT, profile: str = "ijmr") -> str:
+    L = LABELS[profile]
     sel = q1_selection(root)
     others = [r for r in sel["sensitivity_rules"] if r != sel["chosen"]]
-    parts = [
-        "<!-- Generated by exhibits/make_tables.py from outputs/ and data/. "
-        "Do not edit by hand. -->\n",
-        table1(root),
-        table2(root),
-        table3(root, sel["chosen"], "Table III. Robustness of the 2023 ranking to defensible "
-               f"alternatives (rule {sel['chosen']})", True),
-        table4(root),
-        "# Web tables\n",
-    ]
-    for k, rule in enumerate(others, 1):
-        parts.append(table3(root, rule, f"Web table {k}. Robustness of the 2023 ranking "
-                            f"(rule {rule}; layout as Table III)", False))
     assert len(others) == 2, "web table numbering assumes two sensitivity rules"
-    parts += [web_q1(root), web_q4(root)]
+    blocks = {
+        "ind": lambda: table1(root, L),
+        "repro": lambda: table2(root, L),
+        "robust": lambda: table3(root, sel["chosen"], f"{L['robust']}. Robustness of the 2023 "
+                                 f"ranking to defensible alternatives (rule {sel['chosen']})",
+                                 "robust" in L["main"]),
+        "valid": lambda: table4(root, L),
+        "SUPP": lambda: L["SUPP"] + "\n",
+        "resid": lambda: web_q1(root, L),
+        "scores": lambda: web_q4(root, L),
+    }
+    for rule in others:
+        blocks[f"rob_{rule}"] = (lambda rule=rule: table3(
+            root, rule, f"{L[f'rob_{rule}']}. Robustness of the 2023 ranking "
+            f"(rule {rule}; layout as {L['robust']})", f"rob_{rule}" in L["main"]))
+    parts = ["<!-- Generated by exhibits/make_tables.py from outputs/ and data/. "
+             "Do not edit by hand. -->\n"]
+    parts += [blocks[k]() for k in L["order"]]
     return "\n".join(parts)
 
 
-def main() -> int:
-    out = ROOT / "manuscript" / "tables.md"
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    profile = argv[argv.index("--profile") + 1] if "--profile" in argv else "ijmr"
+    if profile not in LABELS:
+        raise SystemExit(f"unknown profile {profile!r}: one of {sorted(LABELS)}")
+    out = ROOT / LABELS[profile]["out"]
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render(ROOT), encoding="utf-8", newline="\n")
-    print(f"wrote {out.relative_to(ROOT)}")
+    out.write_text(render(ROOT, profile), encoding="utf-8", newline="\n")
+    print(f"wrote {out.relative_to(ROOT).as_posix()}")
     return 0
 
 

@@ -16,6 +16,13 @@ are what check_manuscript_numbers.py verifies. This check extracts the text of
 
 Prints "SKIPPED" and exits 0 when manuscript/ or the .docx files are absent (all are
 git-ignored). Exit 1 on any difference.
+
+--manuscript-dir DIR (default manuscript) ties DIR's set with DIR's profile
+(check_manuscript_numbers.PROFILES): for the Journal of Public Health set (manuscript/jph_v2)
+the files are 02_manuscript_anonymised.docx and 01_title_page.docx (title_page.md), the
+limits are that journal's (abstract at most 200 words, main text 2,000 to 3,000), the
+checked sections are the profile's, and the Supplementary figure section of
+06_supplementary_material.docx is tied as well.
 """
 import json
 import re
@@ -33,6 +40,8 @@ from verification import check_manuscript_numbers as cmn  # noqa: E402
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 HEADINGS = ("Abstract", "Introduction", "Methods", "Results", "Discussion", "References",
             "Tables", "Legends to Figures")
+# further section headings of the Journal of Public Health files
+JPH_HEADINGS = ("Supplementary material", "Supplementary tables", "Supplementary figure")
 
 
 def docx_paragraphs(path: Path) -> list[tuple[str, bool]]:
@@ -62,14 +71,14 @@ def docx_paragraphs(path: Path) -> list[tuple[str, bool]]:
     return out
 
 
-def docx_sections(path: Path) -> dict[str, str]:
+def docx_sections(path: Path, headings: tuple[str, ...] = HEADINGS) -> dict[str, str]:
     """The text of each checked section of the blinded manuscript, headings excluded and
     table cells left out."""
     sections: dict[str, list[str]] = {}
     current = None
     for text, in_table in docx_paragraphs(path):
         t = text.strip()
-        if not in_table and t in HEADINGS:
+        if not in_table and t in headings:
             current = t
             sections.setdefault(current, [])
             continue
@@ -79,7 +88,10 @@ def docx_sections(path: Path) -> dict[str, str]:
 
 
 def md_clean(s: str) -> str:
-    """Markdown to plain text for token comparison: emphasis, escapes and carets removed."""
+    """Markdown to plain text for token comparison: emphasis, escapes and carets removed, and
+    the item numbers of a numbered list opening in bold ("1. **Publish"), which Word
+    numbers itself, left out."""
+    s = re.sub(cmn.ALLOW_LIST, "", s)
     return s.replace("**", "").replace("*", "").replace("\\", "").replace("^", " ")
 
 
@@ -99,47 +111,73 @@ def compare(a: list[str], b: list[str]) -> str | None:
             f"markdown {b[k] if k < len(b) else '(none)'!r} ({len(a)} vs {len(b)} tokens)")
 
 
-def problems(root: Path) -> list[str]:
-    sub = root / "manuscript" / "submission"
+def problems(root: Path, profile: "cmn.Profile | None" = None,
+             ms_dir: Path | None = None) -> list[str]:
+    profile = profile or cmn.IJMR
+    ms_dir = ms_dir or root / profile.dir
+    heads = HEADINGS if profile is cmn.IJMR else HEADINGS + JPH_HEADINGS
+    sub = ms_dir / "submission"
     out = []
-    ms = (root / "manuscript" / "manuscript.md").read_text(encoding="utf-8")
-    secs = docx_sections(sub / "02_blinded_manuscript.docx")
-    for name in cmn.SECTION_ORDER:
+    ms = (ms_dir / "manuscript.md").read_text(encoding="utf-8")
+    secs = docx_sections(sub / profile.ms_docx, heads)
+    extra_sections = {sec for _, sec in profile.docx_extra}
+    for name in [s for s in profile.section_order if s not in extra_sections]:
         if name not in secs:
-            out.append(f"02_blinded_manuscript.docx: no '{name}' heading")
+            out.append(f"{profile.ms_docx}: no '{name}' heading")
             continue
         msg = compare(tokens(secs[name]), tokens(md_clean(cmn.section(ms, name))))
         if msg:
-            out.append(f"02_blinded_manuscript.docx {name}: {msg}")
-    fp_docx = "\n".join(t for t, _ in docx_paragraphs(sub / "01_first_page.docx"))
-    fp_md = (root / "manuscript" / "first_page.md").read_text(encoding="utf-8")
+            out.append(f"{profile.ms_docx} {name}: {msg}")
+    for docx_name, name in profile.docx_extra:
+        extra = docx_sections(sub / docx_name, heads)
+        if name not in extra:
+            out.append(f"{docx_name}: no '{name}' heading")
+            continue
+        msg = compare(tokens(extra[name]), tokens(md_clean(cmn.section(ms, name))))
+        if msg:
+            out.append(f"{docx_name} {name}: {msg}")
+    fp_docx = "\n".join(t for t, _ in docx_paragraphs(sub / profile.title_docx))
+    fp_md = (ms_dir / profile.title_md).read_text(encoding="utf-8")
     msg = compare(only_numbers(fp_docx), only_numbers(md_clean(fp_md)))
     if msg:
-        out.append(f"01_first_page.docx: {msg}")
-    counts_path = root / "manuscript" / "word_counts.json"
+        out.append(f"{profile.title_docx}: {msg}")
+    counts_path = ms_dir / "word_counts.json"
     if not counts_path.exists():
-        out.append("manuscript/word_counts.json missing (run manuscript/build_docx.py)")
+        rel = (counts_path.relative_to(root).as_posix() if counts_path.is_relative_to(root)
+               else str(counts_path))
+        out.append(f"{rel} missing (run manuscript/build_docx.py)")
     else:
         w = json.loads(counts_path.read_text(encoding="utf-8"))
         flat = re.sub(r"\s+", " ", fp_docx)
         for want in (f"{w['main_text']:,} words", f"Abstract: {w['abstract']} words"):
             if want not in flat:
-                out.append(f"01_first_page.docx does not quote Word's count {want!r}")
+                out.append(f"{profile.title_docx} does not quote Word's count {want!r}")
         if flat.count("counted in Microsoft Word") < 2:
-            out.append("01_first_page.docx does not say the counts were taken in Microsoft Word")
-        if w["abstract"] > 250 or w["main_text"] > 3000:
-            out.append(f"Word counts over IJMR's limits: {w}")
+            out.append(f"{profile.title_docx} does not say the counts were taken in Microsoft Word")
+        if profile is cmn.IJMR:
+            if w["abstract"] > 250 or w["main_text"] > 3000:
+                out.append(f"Word counts over IJMR's limits: {w}")
+        elif not (w["abstract"] <= profile.abstract_max
+                  and profile.main_min <= w["main_text"] <= profile.main_max):
+            out.append(f"Word counts outside the {profile.name} limits: {w}")
     return out
 
 
-def main(root: Path = ROOT) -> int:
-    sub = root / "manuscript" / "submission"
-    need = [root / "manuscript" / "manuscript.md", root / "manuscript" / "first_page.md",
-            sub / "02_blinded_manuscript.docx", sub / "01_first_page.docx"]
+def main(root: Path = ROOT, argv: list[str] | None = None) -> int:
+    """Options: --manuscript-dir DIR (default manuscript) and --profile NAME."""
+    argv = sys.argv[1:] if argv is None else argv
+    profile, ms_dir = cmn.cli_profile(argv, root)
+    sub = ms_dir / "submission"
+    need = [ms_dir / "manuscript.md", ms_dir / profile.title_md,
+            sub / profile.ms_docx, sub / profile.title_docx]
+    need += [sub / d for d, _ in profile.docx_extra]
     if not (root / "manuscript").is_dir() or not all(p.exists() for p in need):
-        print("SKIPPED: manuscript/ or its .docx files not present (kept private until a decision)")
+        if profile is cmn.IJMR:
+            print("SKIPPED: manuscript/ or its .docx files not present (kept private until a decision)")
+        else:
+            print(f"SKIPPED: {profile.dir}/ or its .docx files not present")
         return 0
-    found = problems(root)
+    found = problems(root, profile, ms_dir)
     for ln in found:
         print(ln)
     print(f"docx tie: {len(found)} problem(s)")
