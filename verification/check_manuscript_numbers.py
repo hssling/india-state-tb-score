@@ -250,7 +250,7 @@ def plan_facts(root: Path) -> dict:
     reg = grab(r"pushed to the public repository \S+ at (\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d:\d\d)Z")
     y, mo, d, t = reg.groups()
     # section 13 by dated block: the entries made during the analysis (the first date) and
-    # those added after peer review of the manuscript (20 November 2026, post hoc)
+    # those added before journal submission after an internal review (20 November 2026, post hoc)
     deviations = text.split("## 13. Deviations", 1)[1]
     blocks = re.split(r"(?m)^\*\*(\d{1,2} \w+ \d{4})\.\*\*$", deviations)
     by_date = {blocks[i]: len(re.findall(r"^\d+\. \*\*", blocks[i + 1], re.M))
@@ -630,7 +630,7 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
     # ---- post hoc (plan section 13, 20 November 2026): outputs/posthoc_summary.csv
     w.update(posthoc_labels(root))
 
-    # ---- strings added for the revised Journal of Public Health text (after peer review)
+    # ---- strings added for the revised Journal of Public Health text (after the internal review)
     w.update(revision_labels(root, sel))
 
     # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
@@ -675,7 +675,8 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
     w["methods.sat_level"] = num(SAT_LEVEL, 2)
     w["methods.registration"] = pf["registration"]
     w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated entries"
-    w["methods.n_posthoc_entries"] = f"{WORDS[pf['n_posthoc_entries']]} after peer review"
+    w["methods.n_posthoc_entries"] = (f"{WORDS[pf['n_posthoc_entries']]} added before journal "
+                                       "submission")
     env = environment(root)
     w["methods.python"] = f"Python {env['Python']}"
     w["methods.pdfplumber"] = f"pdfplumber {env['pdfplumber']}"
@@ -944,7 +945,7 @@ ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
 YEARS_ALLOWED = {"2019", "2021", "2022", "2023", "2024"}
 
 JPH_SECTION_REQUIRED: dict[str, list[str]] = {
-    # The revised text after peer review (20 November 2026): the same registered numbers,
+    # The revised text after the internal review (20 November 2026): the same registered numbers,
     # the post hoc results beside them (plan section 13, entry 11), the exhibits renumbered
     # (Table 1 in the text; Supplementary Tables S1-S10 and Supplementary Figure S1 online).
     "Abstract": [
@@ -963,8 +964,10 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "To our knowledge",
     ],
     "Methods": [ph for ph in SECTION_REQUIRED["Methods"]] + [
-        "and {methods.n_posthoc_entries}, which adds post hoc analyses; deviations and notes are "
-        "distinguished in Supplementary Table S1",
+        "and {methods.n_posthoc_entries}, after an internal critical review of the draft, which "
+        "adds post hoc analyses",
+        "deviations and notes are distinguished in Supplementary Table S1",
+        "Oldham's method,^23^",
         "(R1, capped)", "(R2, uncapped)",
         "a {methods.cv_range}", "centred on equal weights",
         "on indicators 1, 2, 3, 4 and 6 ({q4.common_points})",
@@ -1064,7 +1067,7 @@ JPH_REQUIRED = [lab for lab in REQUIRED
     "explore.a3_above_1", "q4.common_points", "q4.max_2023", "q4.example.*",
     "methods.cv_range", "methods.n_posthoc_entries", "q4.R3.all.exceeds",
 ]
-# the abstract no longer quotes the largest band violation (Referee B's shorter sentence);
+# the abstract no longer quotes the largest band violation (a shorter sentence);
 # it quotes the post hoc overdispersion count
 JPH_ABSTRACT_REQUIRED = [lab for lab in ABSTRACT_REQUIRED if lab != "q1.R2.max_violation"] + [
     "posthoc.R2.mult95_states"]

@@ -29,7 +29,7 @@ STEPS = [
     ("q3_validity 2023", PY + ["src/q3_validity.py", "2023"]),
     ("q4_change", PY + ["src/q4_change.py"]),
     ("explore_udst (exploratory)", PY + ["src/explore_udst.py"]),
-    ("posthoc (post hoc, after peer review)", PY + ["src/posthoc.py"]),
+    ("posthoc (post hoc, internal review of the draft)", PY + ["src/posthoc.py"]),
 ]
 CHECKS = [
     ("check_extraction_totals", PY + ["verification/check_extraction_totals.py"]),

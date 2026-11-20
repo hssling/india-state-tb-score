@@ -4,8 +4,8 @@ Run as: python -I verification/check_deviations.py
 
 Each output file containing the word 'exploratory' (case-insensitive) needs a dated
 entry in section 13 that names the file and itself says 'exploratory'; likewise each
-output file containing 'post hoc' (the analyses added after peer review, 20 November
-2026) needs a dated entry that names the file and says 'post hoc'.
+output file containing 'post hoc' (the analyses added on 20 November 2026, before journal
+submission, after an internal critical review of the draft) needs a dated entry that names the file and says 'post hoc'.
 """
 import re
 import sys

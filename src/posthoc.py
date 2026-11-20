@@ -1,9 +1,11 @@
-"""POST HOC (not pre-specified): four analyses added after peer review of the manuscript.
+"""POST HOC (not pre-specified): four analyses added before journal submission, after an
+internal critical review of the manuscript draft.
 
 Usage: python -I src/posthoc.py
 
-Logged as a dated entry in plan section 13 (20 November 2026). They were requested by two
-referees and approved by the author after the registered analyses, the exploratory analysis
+Logged as a dated entry in plan section 13 (20 November 2026). They were added on 20
+November 2026, before journal submission, after an internal critical review of the manuscript
+draft, and approved by the author after the registered analyses, the exploratory analysis
 and the manuscript were complete. None of them replaces a registered result; each is
 reported beside the result it qualifies. Every output row has label = "post hoc".
 

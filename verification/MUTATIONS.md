@@ -208,7 +208,8 @@ Fixture tests of the profiles: `tests/test_profiles.py`.
 
 ## Post hoc analyses and the revised JPH text (20 November 2026)
 
-After peer review, four post hoc analyses were added (plan section 13, entry 11;
+Before journal submission, after an internal critical review of the draft, four post hoc
+analyses were added (plan section 13, entry 11;
 `src/posthoc.py`). Their checks were each shown to catch a deliberate break:
 
 | Check | Break | Result |

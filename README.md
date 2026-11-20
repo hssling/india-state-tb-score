@@ -42,10 +42,11 @@ report of the ICMR National TB Prevalence Survey 2019–21. The source PDFs are
 not redistributed here. A fetch script downloads them from their official URLs
 and verifies each against the SHA-256 digest recorded in the plan.
 
-## Post hoc analyses (after peer review)
+## Post hoc analyses (after an internal review of the draft)
 
-Four analyses were added on 20 November 2026, after two referees reviewed the
-manuscript, and are logged as a dated entry in section 13 of the plan. They are **post
+Four analyses were added on 20 November 2026, before journal submission, after an
+internal critical review of the manuscript draft, and are logged as a dated entry in
+section 13 of the plan. They are **post
 hoc**: not pre-specified, labelled "post hoc" in code and output, reported beside the
 registered results and never in place of them. They use their own seed (20261120), and
 are run under the registered primary rule R2 with R1 beside it.
@@ -89,7 +90,7 @@ python -I src/q2_robust.py 2023
 python -I src/q3_validity.py 2023
 python -I src/q4_change.py
 python -I src/explore_udst.py        # exploratory, logged in plan section 13
-python -I src/posthoc.py             # post hoc (after peer review), plan section 13
+python -I src/posthoc.py             # post hoc (internal review), plan section 13
 
 # 4. Exhibits: tables and figures of the manuscript (written to manuscript/,
 #    which is kept private and not in this repository; needs matplotlib)
@@ -144,8 +145,8 @@ Outputs (`outputs/`):
 - `exploratory_udst_scaling_2023.csv`: **exploratory, not pre-specified** (plan
   section 13): the Q1 band test repeated with each state's indicator 3
   achievement scaled to CTD's national figure.
-- `posthoc_q4_states.csv`: **post hoc, after peer review** (plan section 13, 20
-  November 2026): for each state under R2 and R1, and with binomial or Wilson standard
+- `posthoc_q4_states.csv`: **post hoc, added before journal submission after an internal
+  critical review of the draft** (plan section 13, 20 November 2026): for each state under R2 and R1, and with binomial or Wilson standard
   errors, the 2022 to 2023 change, its z-score, the registered verdict, the Bonferroni and
   Benjamini–Hochberg verdicts and the overdispersed funnel flags.
 - `posthoc_summary.csv`: **post hoc**: overdispersion factor, between-state variance and

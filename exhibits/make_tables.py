@@ -74,7 +74,7 @@ LABELS = {
                   "valid", "posthoc", "change", "scores"),
         "main": ("robust",),
         "out": "manuscript/jph_v2/tables.md",
-        # JPH only (after peer review): the flat Dirichlet is centred on equal weights, not
+        # JPH only (after the internal review): the flat Dirichlet is centred on equal weights, not
         # on CTD's; the plan 9.3 descriptive context is given in the validity table's note
         "flat_label": True, "ctx_note": True,
     },
@@ -573,7 +573,8 @@ LOG_TYPES = {
     8: ("Exploratory analysis", "Deviation: exploratory analysis added"),
     9: ("Indicator 8 flag", "Deviation"),
     10: ("Correction to item 5", "Note: correction"),
-    11: ("Post hoc analyses after peer review", "Post hoc analyses (after peer review)"),
+    11: ("Post hoc analyses after an internal critical review",
+         "Post hoc analyses (internal review before submission)"),
 }
 
 
@@ -693,7 +694,9 @@ def posthoc_table(root: Path, L: dict) -> str:
     note_seed = next(r for r in rows if r["quantity"] == "oldham_r")["note"]
     m = re.search(r"(\d+) bootstrap draws, seed (\d+)", note_seed)
     notes = [
-        "Post hoc analyses, added after peer review (plan §13, entry 11); not pre-specified. "
+        "Post hoc analyses, added on 20 November 2026, before journal submission, after an "
+        "internal critical review of the manuscript draft (plan §13, entry 11); not "
+        "pre-registered. "
         "Rules R2 (primary) and R1; indicators 1, 2, 3, 4 and 6, rescaled, unless stated; "
         f"{count(int(m.group(1)))} bootstrap draws (seed {m.group(2)}, reset for each analysis "
         "and rule). The funnel compares each state's change with the inverse-variance-weighted "
