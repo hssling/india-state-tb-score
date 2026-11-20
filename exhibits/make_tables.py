@@ -19,8 +19,9 @@ items that do not fit go online as web tables.
 
 Profiles (--profile): "ijmr" (default) writes manuscript/tables.md as above. "jph" (Journal of
 Public Health) writes manuscript/jph_v2/tables.md with the same tables and numbers, numbered
-in Arabic numerals: Table 1 (robustness) in the text, and Supplementary Tables S1-S7 online
-in first-citation order. LABELS holds each profile's exhibit names and order.
+in Arabic numerals: Table 1 (robustness) in the text, and Supplementary Tables S1-S10 online
+in first-citation order, including (JPH only) the plan's section 13 log, the post hoc analyses
+(plan section 13, 20 November 2026) and the change by state. LABELS holds each profile's exhibit names and order.
 """
 from __future__ import annotations
 
@@ -61,15 +62,21 @@ LABELS = {
         "out": "manuscript/tables.md",
     },
     "jph": {
-        "ind": "Supplementary Table S1", "repro": "Supplementary Table S2", "robust": "Table 1",
-        "rob_R1": "Supplementary Table S3", "rob_R3": "Supplementary Table S4",
-        "resid": "Supplementary Table S5", "valid": "Supplementary Table S6",
-        "scores": "Supplementary Table S7", "fig_resid": "Figure 1", "fig_change": "Figure 3",
+        "log": "Supplementary Table S1", "ind": "Supplementary Table S2",
+        "repro": "Supplementary Table S3", "robust": "Table 1",
+        "resid": "Supplementary Table S4", "rob_R1": "Supplementary Table S5",
+        "rob_R3": "Supplementary Table S6", "valid": "Supplementary Table S7",
+        "posthoc": "Supplementary Table S8", "change": "Supplementary Table S9",
+        "scores": "Supplementary Table S10", "fig_resid": "Figure 1", "fig_change": "Figure 3",
+        "fig_fifths": "Supplementary Figure S1",
         "data": "Data Availability Statement", "SUPP": "# Supplementary tables",
-        "order": ("robust", "SUPP", "ind", "repro", "rob_R1", "rob_R3", "resid", "valid",
-                  "scores"),
+        "order": ("robust", "SUPP", "log", "ind", "repro", "resid", "rob_R1", "rob_R3",
+                  "valid", "posthoc", "change", "scores"),
         "main": ("robust",),
         "out": "manuscript/jph_v2/tables.md",
+        # JPH only (after peer review): the flat Dirichlet is centred on equal weights, not
+        # on CTD's; the plan 9.3 descriptive context is given in the validity table's note
+        "flat_label": True, "ctx_note": True,
     },
 }
 IJMR_LABELS = LABELS["ijmr"]
@@ -295,7 +302,9 @@ def table2(root: Path, L: dict = IJMR_LABELS) -> str:
 # --------------------------------------------------------------------------------------
 # Table III / web tables 1-2: Q2 by variant
 # --------------------------------------------------------------------------------------
-def q2_rows(root: Path, rule: str) -> tuple[list[list[str]], dict]:
+def q2_rows(root: Path, rule: str, flat_label: bool = False) -> tuple[list[list[str]], dict]:
+    """flat_label (JPH): the alpha = 1 row is labelled as a flat Dirichlet, centred on equal
+    weights (alpha_i = 1 for every i), not as weights drawn around CTD's."""
     rs = [r for r in read_csv(root / "outputs" / "q2_2023_summary.csv") if r["rule"] == rule]
     info = {"n": {r["n_compared"] for r in rs if r["n_compared"]}}
     rows = []
@@ -313,8 +322,11 @@ def q2_rows(root: Path, rule: str) -> tuple[list[list[str]], dict]:
                        else f"{ALPHA} = {count(int(s[5:]))} for each indicator")
                 m = re.match(r"(\d+) draws; seed (\d+)", r["note"])
                 info["draws"], info["seed"] = int(m.group(1)), m.group(2)
+                name = (f"Weights from a flat Dirichlet, centred on equal weights ({lab})*"
+                        if flat_label and not s.startswith("c")
+                        else f"Weights drawn around CTD's ({lab})*")
                 rows.append([
-                    f"Weights drawn around CTD's ({lab})*",
+                    name,
                     f"{rank(float(r['median_change']))} "
                     f"({rng(rank(float(r['median_change_q1'])), rank(float(r['median_change_q3'])))})",
                     f"{rank(float(r['max_change']))} "
@@ -377,8 +389,8 @@ def q2_notes(root: Path, info: dict) -> list[str]:
     ]
 
 
-def table3(root: Path, rule: str, title: str, main: bool) -> str:
-    rows, info = q2_rows(root, rule)
+def table3(root: Path, rule: str, title: str, main: bool, flat_label: bool = False) -> str:
+    rows, info = q2_rows(root, rule, flat_label)
     return block(title, ["Variant", "Median rank change", "Maximum rank change",
                          f"{RHO} with the published ranking"], rows, q2_notes(root, info), main)
 
@@ -461,6 +473,8 @@ def table4(root: Path, L: dict = IJMR_LABELS) -> str:
         "ICMR, Indian Council of Medical Research; MDR/RR-TB, multidrug- or "
         "rifampicin-resistant TB; NTPS, National TB Prevalence Survey; y, years.",
     ]
+    if L.get("ctx_note"):
+        notes.insert(-1, ctx_note(root))
     return block(f"{L['valid']}. Validity (Q3, score year 2023) and change over time "
                  "(Q4, 2022 to 2023), by scoring rule",
                  ["Measure"] + [r + (" (primary)" if r == sel["chosen"] else "") for r in rules], rows, notes,
@@ -543,6 +557,239 @@ def web_q4(root: Path, L: dict = IJMR_LABELS) -> str:
 
 
 # --------------------------------------------------------------------------------------
+# Journal of Public Health supplement only: the section 13 log, the post hoc analyses and
+# the change by state
+# --------------------------------------------------------------------------------------
+# Each section 13 entry: (opening words of its bold title, type). A deviation changes what
+# the plan specified; a note records the plan applied as written, or corrects a record.
+LOG_TYPES = {
+    1: ("Indicator 7", "Note: plan applied as written (§5.4, item 5)"),
+    2: ("Score years compared in Q4", "Deviation"),
+    3: ("Indicator 8, score year 2022", "Note: plan applied as written (§5.4, item 2)"),
+    4: ("Indicator 5, score year 2022", "Note: plan applied as written (§5.4, item 4)"),
+    5: ("Indicator 1, score year 2022", "Deviation"),
+    6: ("Definition stated in the 2021 edition", "Note"),
+    7: ("Score year 2020 in Q3", "Deviation"),
+    8: ("Exploratory analysis", "Deviation: exploratory analysis added"),
+    9: ("Indicator 8 flag", "Deviation"),
+    10: ("Correction to item 5", "Note: correction"),
+    11: ("Post hoc analyses after peer review", "Post hoc analyses (after peer review)"),
+}
+
+
+def log_entries(root: Path) -> list[tuple[int, str, str]]:
+    """(number, date, bold title) of every section 13 entry, in order."""
+    text = (root / "docs" / "analysis_plan.md").read_text(encoding="utf-8")
+    sec = text.split("## 13. Deviations", 1)[1]
+    out, date = [], None
+    for ln in sec.splitlines():
+        m = re.match(r"^\*\*(\d{1,2} \w+ \d{4})\.\*\*$", ln.strip())
+        if m:
+            date = m.group(1)
+            continue
+        m = re.match(r"^(\d+)\. \*\*(.+?)\*\*", ln)
+        if m and date:
+            out.append((int(m.group(1)), date, m.group(2).rstrip(".")))
+    return out
+
+
+def log_table(root: Path, L: dict) -> str:
+    rows = []
+    entries = log_entries(root)
+    assert [n for n, _, _ in entries] == sorted(LOG_TYPES), "section 13 entries changed"
+    for n, date, title in entries:
+        start, kind = LOG_TYPES[n]
+        assert title.startswith(start), f"section 13 entry {n}: {title!r}"
+        rows.append([str(n), date, title, kind])
+    notes = [
+        "Entries of §13 (Deviations) of the registered analysis plan, as dated there. A "
+        "deviation changes what the plan specified; a note records the plan applied as "
+        "written, or corrects a record. The full text of each entry is in the deposited "
+        f"plan (see the {L['data']}).",
+    ]
+    return block(f"{L['log']}. Dated entries of the analysis plan's deviations log",
+                 ["Entry", "Date", "Subject", "Type"], rows, notes, main=False)
+
+
+def _posthoc_rows(root: Path) -> list[dict]:
+    rows = read_csv(root / "outputs" / "posthoc_summary.csv")
+    assert all(r["label"] == "post hoc" for r in rows)
+    return rows
+
+
+def posthoc_table(root: Path, L: dict) -> str:
+    rows = _posthoc_rows(root)
+    rules = ("R2", "R1")
+    full, no1 = "1,2,3,4,6", "2,3,4,6 (indicator 1 excluded)"
+
+    def g(analysis, rule, variant, q, iset=full):
+        hit = [r for r in rows if (r["analysis"], r["rule"], r["se_variant"], r["quantity"])
+               == (analysis, rule, variant, q) and r["indicator_set"] in (iset, "")]
+        assert len(hit) == 1, (analysis, rule, variant, q, iset)
+        return hit[0]
+
+    def kn(analysis, rule, variant, q):
+        k = int(float(g("Q4 noise", rule, "binomial", "n_compared")["value"]))
+        return k_of_n(int(float(g(analysis, rule, variant, q)["value"])), k)
+
+    def ci(r):
+        return f"{rho(float(r['value']))} ({rng(rho(float(r['lo'])), rho(float(r['hi'])))})"
+
+    zb = num(float(g("Q4 multiplicity", "R2", "binomial", "z_bonferroni")["value"]), 2)
+    body = [["**Q4: change beyond sampling noise (registered test and multiplicity)**", "", ""]]
+    body.append([f"Exceeds noise, registered test (absolute z > {num(Z975, 2)})"]
+                 + [kn("Q4 noise", r, "binomial", "n_exceeds_registered") for r in rules])
+    body.append([f"Exceeds noise, Bonferroni (absolute z > {zb})"]
+                 + [kn("Q4 multiplicity", r, "binomial", "n_exceeds_bonferroni") for r in rules])
+    body.append(["Exceeds noise, Benjamini–Hochberg (false discovery rate 5%)"]
+                 + [kn("Q4 multiplicity", r, "binomial", "n_exceeds_bh") for r in rules])
+    body.append(["Expected false positives of the registered test if no state changed"]
+                 + [num(float(g("Q4 multiplicity", r, "binomial",
+                                "expected_false_positives")["value"]), 2) for r in rules])
+    body.append(["**Q4: change unusual relative to other states (funnel)**", "", ""])
+    body.append(["Inverse-variance-weighted mean change (points)"]
+                 + [num(float(g("Q4 noise", r, "binomial", "ivw_mean_change")["value"]), 2)
+                    for r in rules])
+    for variant, tag in (("binomial", ""), ("wilson", ", Wilson SE*")):
+        body.append([f"Multiplicative overdispersion factor φ{tag}"]
+                     + [num(float(g("Q4 noise", r, variant, "phi")["value"]), 1) for r in rules])
+        for q, lab in (("n_outside95_mult", "95%"), ("n_outside998_mult", "99.8%")):
+            body.append([f"Outside the {lab} limits, multiplicative{tag}"]
+                        + [kn("Q4 noise", r, variant, q) for r in rules])
+        body.append([f"Between-state variance τ² (DerSimonian–Laird){tag}"]
+                    + [num(float(g("Q4 noise", r, variant, "tau2")["value"]), 2) for r in rules])
+        for q, lab in (("n_outside95_add", "95%"), ("n_outside998_add", "99.8%")):
+            body.append([f"Outside the {lab} limits, additive{tag}"]
+                        + [kn("Q4 noise", r, variant, q) for r in rules])
+    body.append(["States whose category changes with Wilson SEs*: registered test; "
+                 "multiplicative 95%, 99.8%; additive 95%, 99.8%"]
+                + ["; ".join(count(int(float(g("Q4 noise", r, "wilson", f"n_changed_{q}")["value"])))
+                             for q in ("registered", "outside95_mult", "outside998_mult",
+                                       "outside95_add", "outside998_add")) for r in rules])
+    body.append(["**Q4: regression to the mean (Oldham's method)†**", "", ""])
+    for iset, lab in ((full, "1, 2, 3, 4, 6"), (no1, "2, 3, 4, 6")):
+        n = g("Q4 regression to the mean", "R2", "binomial", "oldham_r", iset)["n"]
+        body.append([f"Indicators {lab}: Pearson r (95% CI) of change with two-year mean "
+                     f"(n = {n})"]
+                    + [ci(g("Q4 regression to the mean", r, "binomial", "oldham_r", iset))
+                       for r in rules])
+        body.append([f"Indicators {lab}: Spearman {RHO} (95% CI), sensitivity"]
+                    + [ci(g("Q4 regression to the mean", r, "binomial", "oldham_rho", iset))
+                       for r in rules])
+    body.append(["**Q3: association with prevalence, survey uncertainty propagated‡**", "", ""])
+    n3 = g("Q3 prevalence uncertainty", "R2", "", "rho_point")["n"]
+    body.append([f"Registered {RHO} (n = {n3} units)"]
+                + [rho(float(g("Q3 prevalence uncertainty", r, "", "rho_point")["value"]))
+                   for r in rules])
+    body.append([f"{RHO}, prevalence drawn and units resampled: median (central 95% of draws)"]
+                + [ci(g("Q3 prevalence uncertainty", r, "", "rho_bootstrap")) for r in rules])
+    body.append([f"{RHO}, prevalence drawn only: median (central 95% of draws)"]
+                + [ci(g("Q3 prevalence uncertainty", r, "", "rho_prevalence_only"))
+                   for r in rules])
+    hw = num(float(g("Q3 prevalence uncertainty", "R2", "", "rho_half_width_at_0")["value"]), 2)
+    body.append([f"Half-width of the 95% CI of {RHO} at {RHO} = 0 (n = {n3})", f"±{hw}", f"±{hw}"])
+    wil = g("Q4 noise", "R2", "wilson", "n_states_wilson")["note"].split("; ")
+    changed = [g("Q4 noise", r, "wilson", "n_changed_outside95_add")["note"] for r in rules]
+    note_seed = next(r for r in rows if r["quantity"] == "oldham_r")["note"]
+    m = re.search(r"(\d+) bootstrap draws, seed (\d+)", note_seed)
+    notes = [
+        "Post hoc analyses, added after peer review (plan §13, entry 11); not pre-specified. "
+        "Rules R2 (primary) and R1; indicators 1, 2, 3, 4 and 6, rescaled, unless stated; "
+        f"{count(int(m.group(1)))} bootstrap draws (seed {m.group(2)}, reset for each analysis "
+        "and rule). The funnel compares each state's change with the inverse-variance-weighted "
+        "mean change: it asks whether a change is unusual relative to other states, whereas "
+        "the registered test asks whether it differs from zero beyond sampling noise. "
+        "Multiplicative limits: mean ± z√φ SE, φ the mean squared 10%-winsorised z-score "
+        "(Spiegelhalter 2005); additive limits: mean ± z√(SE² + τ²); z = 1.96 (95%) and "
+        "3.09 (99.8%).",
+        f"*Binomial SEs of zero (a proportion of 0 or 1) replaced by the Wilson-interval SE, "
+        f"for {listing(wil)}. Category changed under the additive 95% limits: "
+        f"{'; '.join(f'{r}, {c}' for r, c in zip(rules, changed))}.",
+        "†Correlation of each state's change with the mean of its 2022 and 2023 scores; "
+        "states resampled for the interval (2.5th and 97.5th percentiles).",
+        "‡Each unit's prevalence drawn from a lognormal distribution fitted to its published "
+        "95% CI.",
+    ]
+    return block(f"{L['posthoc']}. Post hoc analyses: change against overdispersed noise, "
+                 "multiplicity, regression to the mean and prevalence uncertainty",
+                 ["Analysis", "R2 (primary)", "R1"], body, notes, main=False)
+
+
+def change_table(root: Path, L: dict) -> str:
+    """Change by state under the primary rule (indicators 1, 2, 3, 4, 6): plan 10.4's
+    percentage change, the registered verdict and the post hoc flags."""
+    sel = q1_selection(root)
+    rule = sel["chosen"]
+    ph = {r["state"]: r for r in read_csv(root / "outputs" / "posthoc_q4_states.csv")
+          if r["rule"] == rule and r["se_variant"] == "binomial"}
+    reg = [r for r in read_csv(root / "outputs" / "q4_2022_2023_states.csv")
+           if r["rule"] == rule and r["primary"] == "1"]
+    yn = {"1": "Yes", "0": "No", "": "—"}
+    rows = []
+    for r in sorted(reg, key=lambda r: -float(r["change"])):
+        p = ph[r["state"]]
+        assert p["change"] == r["change"] and p["exceeds_registered"] == r["exceeds"]
+        thr = num(float(r["threshold"]), DP["score"]) if r["threshold"] else "Not computable"
+        rows.append([r["state"] + ("†" if r["ut"] == "1" else ""),
+                     num(float(r["change"]), DP["change"]),
+                     num(float(r["pct_change"]), 1), thr, yn[r["exceeds"]],
+                     yn[p["exceeds_bonferroni"]], yn[p["exceeds_bh"]],
+                     f"{yn[p['outside95_mult']]} / {yn[p['outside95_add']]}"])
+    err = next(r for r in read_csv(root / "outputs" / "q4_2022_2023_summary.csv")
+               if r["primary"] == "1")
+    m = re.search(r"^(.+?) \(SE not computable in (\d{4}) \(indicator (\d): binomial a = "
+                  r"(\d+(?:\.\d+)?) > 1 \((\d+)/(\d+)\)\)\)$", err["excluded"])
+    state, year, ind, a, k, n = m.groups()
+    coh = next(c for c in read_csv(root / "data" / "extracted" / "itr2024_tsr_cohort.csv")
+               if c["state"] == state)
+    assert coh["success"] == k
+    notes = [
+        f"Rule {rule}; indicators 1, 2, 3, 4 and 6, rescaled; sorted by change. Change in "
+        f"points, and as a percentage of the 2022 score (plan §10.4). Noise threshold = "
+        f"{num(Z975, 2)} {TIMES} the standard error (SE) of the change; registered verdict "
+        f"(plan §10.3) and, post hoc, after Bonferroni and Benjamini–Hochberg adjustment and "
+        f"outside the 95% limits of the overdispersed funnel (multiplicative / additive; "
+        f"{L['posthoc']}). The registered markings of {L['fig_change']} are not adjusted "
+        "for multiplicity.",
+        "†Union territory. B–H, Benjamini–Hochberg; mult., multiplicative; add., additive.",
+        f"{state}'s {year} treatment-success achievement of {a} (indicator {ind}) is an "
+        f"artefact of the same-period denominator: the {count(int(k))} successful outcomes of "
+        f"its {coh['cohort_year']} cohort of {count(int(coh['cohort_notified']))} are divided "
+        f"by the {count(int(n))} net notified patients of {year}; neither printed value is "
+        f"wrong. The achievement excludes {state} from the noise test but not from the "
+        f"n = {err['rho_n']} association between the 2022 score and the change. Under R2 the "
+        f"uncapped value inflates {state}'s own score and rank ({L['fig_fifths']}), and under "
+        f"R3 it sets the indicator {ind} maximum, so results under both rules carry this "
+        "artefact.",
+    ]
+    return block(f"{L['change']}. Change in the rebuilt score by state, 2022 to 2023 "
+                 f"(rule {rule}), with post hoc adjustments",
+                 ["State or union territory", "Change (points)", "% of 2022 score",
+                  "Threshold (points)", "Beyond noise", "Bonferroni", "B–H",
+                  "Funnel 95% (mult. / add.)"], rows, notes, main=False)
+
+
+def ctx_note(root: Path) -> str:
+    """Plan 9.3: deaths and loss to follow-up, descriptive context only (2022 cohort)."""
+    import statistics
+    ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
+    nat = next(r for r in ctx if r["state"] == "INDIA")
+    st = [r for r in ctx if r["state"] != "INDIA" and int(r["cohort_notified"]) > 0]
+    n = int(nat["cohort_notified"])
+
+    def share(col):
+        v = [int(r[col]) / int(r["cohort_notified"]) for r in st]
+        return (f"median {pct(statistics.median(v), 1)} "
+                f"(range {rng(pct(min(v), 1), pct(max(v), 1))})")
+    ltfu = int(nat["lost_to_follow_up"])
+    return (f"Descriptive context (plan §9.3; no association computed): "
+            f"{k_of_n_pct(int(nat['died']), n)} patients of the 2022 cohort died and "
+            f"{count(ltfu)} ({pct(ltfu, n)}) were lost to follow-up (annexure 3.3 of the India "
+            f"TB Report 2024); across the {count(len(st))} states and union territories, death "
+            f"had a {share('died')} and loss to follow-up a {share('lost_to_follow_up')}.")
+
+
+# --------------------------------------------------------------------------------------
 def render(root: Path = ROOT, profile: str = "ijmr") -> str:
     L = LABELS[profile]
     sel = q1_selection(root)
@@ -553,16 +800,20 @@ def render(root: Path = ROOT, profile: str = "ijmr") -> str:
         "repro": lambda: table2(root, L),
         "robust": lambda: table3(root, sel["chosen"], f"{L['robust']}. Robustness of the 2023 "
                                  f"ranking to defensible alternatives (rule {sel['chosen']})",
-                                 "robust" in L["main"]),
+                                 "robust" in L["main"], L.get("flat_label", False)),
         "valid": lambda: table4(root, L),
         "SUPP": lambda: L["SUPP"] + "\n",
         "resid": lambda: web_q1(root, L),
         "scores": lambda: web_q4(root, L),
+        "log": lambda: log_table(root, L),
+        "posthoc": lambda: posthoc_table(root, L),
+        "change": lambda: change_table(root, L),
     }
     for rule in others:
         blocks[f"rob_{rule}"] = (lambda rule=rule: table3(
             root, rule, f"{L[f'rob_{rule}']}. Robustness of the 2023 ranking "
-            f"(rule {rule}; layout as {L['robust']})", f"rob_{rule}" in L["main"]))
+            f"(rule {rule}; layout as {L['robust']})", f"rob_{rule}" in L["main"],
+            L.get("flat_label", False)))
     parts = ["<!-- Generated by exhibits/make_tables.py from outputs/ and data/. "
              "Do not edit by hand. -->\n"]
     parts += [blocks[k]() for k in L["order"]]

@@ -205,3 +205,31 @@ section. `--manuscript-dir manuscript/jph_v2` runs the harness on that set. Run 
 | JPH (`manuscript/jph_v2/`) | 332 of 332 | 332 of 332 | 664 of 664 |
 
 Fixture tests of the profiles: `tests/test_profiles.py`.
+
+## Post hoc analyses and the revised JPH text (20 November 2026)
+
+After peer review, four post hoc analyses were added (plan section 13, entry 11;
+`src/posthoc.py`). Their checks were each shown to catch a deliberate break:
+
+| Check | Break | Result |
+|---|---|---|
+| check_posthoc_outputs | a count of `outputs/posthoc_summary.csv` edited (Bonferroni 23 to 24, in a copy; `tests/test_posthoc.py`) | caught |
+| check_deviations | a "post hoc" label in an output whose file no section 13 entry names (`tests/test_verification.py`) | caught |
+| check_manuscript_numbers | a post hoc count changed in the text ("23 of 35 under R2" to "21 of 35"; `tests/test_profiles.py`) | caught twice: missing string and unaccounted number |
+
+The catalogue gained the post hoc labels (`posthoc.*`, read from
+`outputs/posthoc_summary.csv`) and the labels of the revised JPH text (residual medians,
+mismatched points, the checklist examples, the coefficients of variation of plan 8.1).
+Counts are carried with words around them ("23 of 35 under R2", "6 of 35 outside the 95%
+limits"), so that they do not mask a changed count elsewhere. The section 13 count used by
+the IJMR text ("ten dated entries") is now the count of the 17 November block, so adding the
+20 November entry leaves the IJMR text valid. JPH has its own required lists
+(`Profile.required`, `abstract_required`) and phrases; IJMR's are unchanged.
+
+The harness was rerun on both sets on 20 November 2026, every mutation of the post hoc
+numbers included:
+
+| Set | inc | swap | All |
+|---|---|---|---|
+| IJMR (`manuscript/`) | 326 of 326 | 326 of 326 | 652 of 652 |
+| JPH (`manuscript/jph_v2/`, revised) | 413 of 413 | 413 of 413 | 826 of 826 |

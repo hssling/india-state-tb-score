@@ -95,6 +95,8 @@ python -I src/posthoc.py             # post hoc (after peer review), plan sectio
 #    which is kept private and not in this repository; needs matplotlib)
 python -I exhibits/make_tables.py
 python -I exhibits/make_figures.py
+#    (--profile jph renders the Journal of Public Health set into manuscript/jph_v2/:
+#    Arabic table numbering, the post hoc tables, figures at an 84 mm column width)
 
 # 5. Verify: tests, analyses, extraction totals, plan order, deviations log,
 #    the post hoc point values, and byte-for-byte reproduction of the committed outputs

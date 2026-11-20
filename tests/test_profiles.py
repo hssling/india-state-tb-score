@@ -44,7 +44,7 @@ Supplementary Table S2 shows 85,231 of 2,360,036 (3.6%) (Figure 1). Table 1, Sup
 
 ### Main finding of this study
 
-Q4 and R3 apply (Supplementary Table S6, Figure 3); Supplementary Table S7.
+Q4 and R3 apply (Supplementary Table S6, Figure 3); Supplementary Table S7; Supplementary Tables S8–S10.
 
 ### What is already known on this topic
 
@@ -90,6 +90,12 @@ Text.
 **Supplementary Table S6. f**
 
 **Supplementary Table S7. g**
+
+**Supplementary Table S8. h**
+
+**Supplementary Table S9. i**
+
+**Supplementary Table S10. j**
 
 ## Legends to Figures
 
@@ -145,7 +151,7 @@ def test_jph_citations_and_exhibits():
     c = cmn.citations(JPH_FIXTURE, cmn.JPH)
     assert c["Table"] == [1]  # "Table 11.2" (a source table) is not Table 1
     assert c["Figure"] == [1, 2, 3]
-    assert c["Supplementary Table"] == [1, 2, 3, 4, 5, 6, 7]
+    assert c["Supplementary Table"] == list(range(1, 11))  # "S8–S10" is a range
     assert c["Supplementary Figure"] == [1]
     assert cmn.exhibit_problems(JPH_FIXTURE, cmn.JPH) == []
     swapped = JPH_FIXTURE.replace("Supplementary Tables S3 and S4", "Supplementary Tables S4 and S3")
@@ -181,7 +187,7 @@ def test_jph_skeleton_and_mutations_cover_subsections(tmp_path):
     order = cmn.JPH.section_order
     sk = cmn.skeleton(JPH_FIXTURE, order)
     # sub-headed text and list item numbers are part of the Discussion's tokens
-    assert sk["Discussion"] == ["4", "3", "6", "3", "7", "1", "9", "2", "7"]
+    assert sk["Discussion"] == ["4", "3", "6", "3", "7", "8", "10", "1", "9", "2", "7"]
     assert sk["Supplementary figure"] == ["1", "7"]
     spans = mm.token_spans(JPH_FIXTURE, order)
     by_sec = {}
@@ -221,13 +227,42 @@ def test_make_tables_profiles():
     jph = mt.render(ROOT, "jph")
     assert not re.search(r"\bTables? [IVX]+\b|Web table", jph)
     caps = re.findall(r"(?m)^\*\*((?:Supplementary )?Table S?\d+)\.", jph)
-    assert caps == ["Table 1"] + [f"Supplementary Table S{i}" for i in range(1, 8)]
-    assert "carried into Table 1 and Supplementary Table S6" in jph
+    assert caps == ["Table 1"] + [f"Supplementary Table S{i}" for i in range(1, 11)]
+    assert "carried into Table 1 and Supplementary Table S7" in jph
     assert "layout as Table 1" in jph and "Data Availability Statement" in jph
-    # the same numbers: every number token of the IJMR tables is in the JPH tables, in order
+    # the flat Dirichlet is labelled as centred on equal weights in the JPH tables only
+    assert "centred on equal weights (α = 1 for each indicator)" in jph
+    assert "centred on equal weights" not in ijmr
+    # the same numbers: every number token of the IJMR tables is in the JPH tables; the JPH
+    # set adds the section 13 log, the post hoc tables and the descriptive context note
     num = re.compile(r"\d[\d,.]*")
     strip_labels = lambda t: re.sub(  # noqa: E731
         r"(?:Supplementary )?(?:Table|Figure|Web table)s? S?[IVX\d]+(?![\d.]\d)", "", t)
-    assert sorted(num.findall(strip_labels(ijmr))) == sorted(num.findall(strip_labels(jph)))
+    from collections import Counter
+    shared = Counter(num.findall(strip_labels(ijmr))) - Counter(num.findall(strip_labels(jph)))
+    assert not shared, f"IJMR table numbers missing from the JPH tables: {dict(shared)}"
     assert mt.both("Table III", "Table IV") == "Tables III and IV"
     assert mt.both("Table 1", "Supplementary Table S6") == "Table 1 and Supplementary Table S6"
+
+
+def test_jph_section13_log_types_cover_every_entry():
+    mt = _make_tables()
+    entries = mt.log_entries(ROOT)
+    assert [n for n, _, _ in entries] == sorted(mt.LOG_TYPES)
+    assert entries[-1][1] == "20 November 2026"
+    kinds = [mt.LOG_TYPES[n][1].split(":")[0] for n, _, _ in entries]
+    assert kinds.count("Deviation") == 5 and kinds.count("Note") == 5
+
+
+def test_jph_profile_requires_post_hoc_labels():
+    req = cmn.JPH.req()
+    assert "posthoc.R2.bonferroni" in req and "q4.R2.no1.rho_ci" not in req
+    assert cmn.IJMR.req() == cmn.REQUIRED and cmn.IJMR.abstract_req() == cmn.ABSTRACT_REQUIRED
+    cat = cmn.catalogue(ROOT)
+    want = cmn.want(ROOT, req)
+    # a changed post hoc count is a missing string and an unaccounted number
+    text = "\n".join(want.values())
+    bad = text.replace(cat["posthoc.R2.bonferroni"],
+                       cat["posthoc.R2.bonferroni"].replace("23 of", "21 of"))
+    assert cmn.missing(bad, want) == [("posthoc.R2.bonferroni", cat["posthoc.R2.bonferroni"])]
+    assert "21" in cmn.unaccounted(bad, cat, list(cmn.JPH.allow))

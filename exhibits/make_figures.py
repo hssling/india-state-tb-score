@@ -18,6 +18,16 @@ Greyscale only: identity is carried by marker shape, fill and hatching, never by
 colour; titles and explanations belong in the legends, not on the images. Counts
 that Tables II and IV report are not repeated on the images (IJMR: no data in both
 tabular and graphic form).
+
+Profiles: python -I exhibits/make_figures.py --profile jph writes the Journal of Public
+Health set to manuscript/jph_v2/figures/ (the IJMR files in manuscript/figures/ are not
+touched), named as that manuscript numbers them: figure1 (residual band), figure2 (validity),
+figure3 (change against noise) and figure_s1 (Supplementary Figure S1, the fifths). Each
+figure is drawn at a single-column width of 84 mm with FONT_PT lettering, and save() asserts
+that the cap height of every piece of text is at least 1.5 mm at that width (JPH: lettering
+at least 1.5 mm high after reduction). The rules carry descriptive names, and the
+alpha = 1 setting is labelled as a flat Dirichlet centred on equal weights. --out DIR writes
+to DIR instead (used to check that the IJMR rendering is unchanged).
 """
 from __future__ import annotations
 
@@ -45,6 +55,14 @@ OUT = ROOT / "manuscript" / "figures"
 DPI = 600
 MINUS = "−"
 FONT_PT = 9
+# Profile settings; configure() switches them for the Journal of Public Health set.
+PROFILE = "ijmr"
+WIDTH_IN = 6.5  # figure width (inches); heights scale with it
+NAMES = {"figure1": "figure1", "figure2": "figure2", "figure3": "figure3", "figure4": "figure4"}
+RULE_NAMES = {"R1": "R1", "R2": "R2", "R3": "R3"}
+CAP_HEIGHT_EM = 0.662  # cap and numeral height of Times New Roman, as a share of the em
+MIN_LETTER_MM = 1.5  # JPH: lettering at least 1.5 mm high at a single-column width
+COLUMN_MM = 84.0
 
 BLACK, DARK, MID, LIGHT, PALE = "#000000", "#404040", "#808080", "#b0b0b0", "#e0e0e0"
 
@@ -79,8 +97,25 @@ def selection() -> dict:
     return json.loads((ROOT / "outputs" / "q1_2023_selection.json").read_text(encoding="utf-8"))
 
 
+def letter_height_mm(fig) -> float:
+    """The smallest cap height (mm) of any visible text of fig, at a width of COLUMN_MM."""
+    sizes = [t.get_fontsize() for t in fig.findobj(matplotlib.text.Text)
+             if t.get_visible() and t.get_text().strip()]
+    scale = COLUMN_MM / (fig.get_figwidth() * 25.4)
+    return min(sizes) * CAP_HEIGHT_EM * 25.4 / 72 * scale
+
+
+def hgt(height_in: float) -> float:
+    """A height designed at the IJMR width of 6.5 in, scaled to WIDTH_IN."""
+    return height_in * WIDTH_IN / 6.5
+
+
 def save(fig, name: str) -> None:
     """Write TIFF and PNG as 8-bit greyscale without alpha, and an editable SVG."""
+    name = NAMES[name]
+    if PROFILE == "jph":
+        mm = letter_height_mm(fig)
+        assert mm >= MIN_LETTER_MM, f"{name}: lettering {mm:.2f} mm at {COLUMN_MM:g} mm wide"
     OUT.mkdir(parents=True, exist_ok=True)
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=DPI, facecolor="white", metadata={"Software": None})
@@ -105,7 +140,7 @@ def figure1() -> str:
     y = [float(r["published"]) for r in rows]
     inb = [r["in_band"] == "1" for r in rows]
     lo, hi = min(x) - 5, max(y) + 5
-    fig, ax = plt.subplots(figsize=(6.5, 5.6))
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, hgt(5.6) if PROFILE == "ijmr" else hgt(7.4)))
     band = Polygon([(lo, lo), (hi, hi), (hi, hi + mp), (lo, lo + mp)], closed=True,
                    facecolor=PALE, edgecolor="none", zorder=0)
     ax.add_patch(band)
@@ -118,7 +153,7 @@ def figure1() -> str:
                s=38, marker="^", facecolor=BLACK, edgecolor=BLACK, linewidth=0.6, zorder=3)
     ax.set_xlim(5 * int(min(x) / 5) - 2, 5 * int(max(x) / 5 + 1) + 2)
     ax.set_ylim(5 * int(min(y) / 5) - 2, 5 * int(max(y) / 5 + 1) + 2)
-    ax.set_xlabel(f"Rebuilt partial score, {rule} (points; maximum {100 - mp})")
+    ax.set_xlabel(f"Rebuilt partial score, {RULE_NAMES[rule]} (points; maximum {100 - mp})")
     ax.set_ylabel("Published State TB Score, 2023 (points)")
     n = len(inb)
     ax.legend(handles=[
@@ -130,7 +165,8 @@ def figure1() -> str:
                label="Inside the band"),
         Line2D([], [], marker="^", ls="", markerfacecolor=BLACK, markeredgecolor=BLACK,
                label="Outside the band"),
-    ], loc="upper left", frameon=False)
+    ], **({"loc": "upper left"} if PROFILE == "ijmr" else
+          {"loc": "upper center", "bbox_to_anchor": (0.42, -0.14)}), frameon=False)
     fig.tight_layout()
     save(fig, "figure1")
     excl = ", ".join(sel["excluded"])
@@ -169,32 +205,41 @@ def figure2() -> str:
             y += 1.0
         y += 0.6
     h = 0.38
-    fig, ax = plt.subplots(figsize=(6.5, 6.4))
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, hgt(6.4) if PROFILE == "ijmr" else hgt(9.4)))
     style = {"c63": dict(color=DARK, edgecolor=BLACK, hatch=None),
              "alpha1": dict(color="white", edgecolor=BLACK, hatch="////")}
     for k, s_ in enumerate(settings):
         vals = [share[(s, s_)] for s in labels]
         ax.barh([p + (k - 0.5) * h for p in ypos], vals, height=h, linewidth=0.6,
                 **style[s_])
-    ax.set_yticks(ypos, labels)
+    ax.set_yticks(ypos, [SHORT.get(x, x) for x in labels] if PROFILE == "jph" else labels)
     ax.invert_yaxis()
     ax.set_xlim(0, 100)
-    ax.set_xlabel("Weight draws in which the state stays in its base fifth (%)")
+    ax.set_xlabel("Weight draws in which the state stays in its base fifth (%)"
+                  if PROFILE == "ijmr" else "Draws in which the state stays in its fifth (%)")
     ax.tick_params(axis="y", length=0)
     n_f = len(order[0][1])
-    names = {"top": "Top fifth of the base ranking", "bottom": "Bottom fifth of the base ranking"}
+    names = ({"top": "Top fifth of the base ranking", "bottom": "Bottom fifth of the base ranking"}
+             if PROFILE == "ijmr" else {"top": "Top fifth", "bottom": "Bottom fifth"})
     for f, gy in group_y.items():
         ax.text(-0.02, gy + 0.1, names[f], transform=ax.get_yaxis_transform(), ha="right",
                 va="center", fontweight="bold")
     draws = next(r for r in read_csv(ROOT / "outputs" / "q2_2023_summary.csv")
                  if r["rule"] == rule and r["setting"] == "c63")["note"].split(";")[0]
     draws = f"{int(draws.split()[0]):,} draws"
-    ax.legend(handles=[
+    handles = [
         Patch(facecolor=DARK, edgecolor=BLACK, label="Weights near CTD's (c = 63)"),
         Patch(facecolor="white", edgecolor=BLACK, hatch="////",
-              label="Weights spread widely (α = 1 for each indicator)"),
-    ], loc="upper center", bbox_to_anchor=(0.45, -0.09), ncol=1, frameon=False)
-    fig.tight_layout()
+              label=("Weights spread widely (α = 1 for each indicator)" if PROFILE == "ijmr"
+                     else "Flat Dirichlet, centred on equal weights (α = 1)")),
+    ]
+    if PROFILE == "ijmr":
+        ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.45, -0.09), ncol=1,
+                  frameon=False)
+        fig.tight_layout()
+    else:  # centred on the figure, below the axis title
+        fig.legend(handles=handles, loc="lower center", ncol=1, frameon=False)
+        fig.tight_layout(rect=(0, 0.07, 1, 1))
     save(fig, "figure2")
     return (f"Figure 2. Rule {rule}; {n_f} states in each base fifth; {draws} per setting "
             f"(outputs/q2_2023_fifths.csv, share_stays).")
@@ -210,7 +255,7 @@ def figure3() -> str:
              if u["rule"] == rule and u["dropped"] == "0"]
     abbrev = {u["unit"]: u["unit_abbrev"].replace(",", "+")
               for u in read_csv(ROOT / "data" / "extracted" / "ntps_units.csv")}
-    fig, ax = plt.subplots(figsize=(6.5, 5.4))
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, hgt(5.4) if PROFILE == "ijmr" else hgt(7.6)))
     order = sorted(units, key=lambda u: float(u["unit_score"]))
     dodge, pairs = {}, []
     for a_, b_ in zip(order, order[1:]):
@@ -234,10 +279,12 @@ def figure3() -> str:
                    linewidth=0.9, zorder=3)
     for u in units:
         a = abbrev[u["unit"]]
-        dx, dy, ha = LABEL_OFFSET.get(a, (4, 3, "left"))
+        dx, dy, ha = (LABEL_OFFSET if PROFILE == "ijmr" else LABEL_OFFSET_JPH).get(
+            a, (4, 3, "left") if PROFILE == "ijmr" else (3, 2, "left"))
         ax.annotate(a, (float(u["unit_score"]), float(u["prevalence"])), xytext=(dx, dy),
                     textcoords="offset points", color=BLACK, ha=ha)
-    ax.set_xlabel(f"Rebuilt State TB Score, 2023 ({rule}, rescaled; points)")
+    ax.set_xlabel(f"Rebuilt State TB Score, 2023 ({rule}, rescaled; points)" if PROFILE == "ijmr"
+                  else f"Rebuilt score, 2023 ({RULE_NAMES[rule]}; points)")
     ax.set_ylabel("TB prevalence, age ≥15 y (per 100 000)")
     # bars drawn with an offset transform do not update the data limits: set them here
     ax.set_ylim(0, 50 * (int(max(float(u["ci_high"]) for u in units) / 50) + 1))
@@ -247,7 +294,8 @@ def figure3() -> str:
         Line2D([], [], marker="s", ls="", markerfacecolor=BLACK, markeredgecolor=BLACK,
                label="State group (population-weighted score)"),
         Line2D([], [], color=MID, lw=0.8, label="95% confidence interval"),
-    ], loc="lower left", frameon=False)
+    ], **({"loc": "lower left"} if PROFILE == "ijmr" else
+          {"loc": "upper center", "bbox_to_anchor": (0.42, -0.14)}), frameon=False)
     fig.tight_layout()
     save(fig, "figure3")
     key = "; ".join(f"{abbrev[u['unit']]}, " + (u["unit"] if u["unit_type"] == "state" else
@@ -274,6 +322,10 @@ DODGE_PT = 2.5  # display offset of each bar of such a pair, in points
 # Label placement only (points in offset units, alignment), to avoid overprinting.
 LABEL_OFFSET = {"TS": (-4, 3, "right"), "NE": (4, -9, "left"), "WB": (-4, 3, "right"),
                 "MH+GA": (4, -9, "left")}
+# the same at the single-column width (JPH), placed after inspection of the rendering
+LABEL_OFFSET_JPH = {"TS": (-3, 2, "right"), "NE": (3, -8, "left"), "WB": (-3, 2, "right"),
+                    "MH+GA": (3, -8, "left"), "KL+LD": (-5, -3, "right"),
+                    "HR": (4, -9, "left")}
 
 
 # --------------------------------------------------------------------------------------
@@ -290,7 +342,7 @@ def figure4() -> str:
     shown = [r for r in rows if r["threshold"]]
     dropped = [r["state"] for r in rows if not r["threshold"]]
     shown.sort(key=lambda r: float(r["change"]))
-    fig, ax = plt.subplots(figsize=(6.5, 8.6))
+    fig, ax = plt.subplots(figsize=(WIDTH_IN, hgt(8.6) if PROFILE == "ijmr" else hgt(14.6)))
     ys = list(range(len(shown)))
     for yv, r in zip(ys, shown):
         t = float(r["threshold"])
@@ -302,17 +354,23 @@ def figure4() -> str:
     ax.scatter([c for c, e in zip(ch, exc) if not e], [y for y, e in zip(ys, exc) if not e],
                marker="o", s=30, facecolor="white", edgecolor=BLACK, linewidth=0.9, zorder=3)
     ax.axvline(0, color=DARK, lw=0.7, zorder=0)
-    ax.set_yticks(ys, [r["state"] + (" †" if r["ut"] == "1" else "") for r in shown])
+    ax.set_yticks(ys, [SHORT.get(r["state"], r["state"]) + (" †" if r["ut"] == "1" else "")
+                       for r in shown] if PROFILE == "jph" else
+                  [r["state"] + (" †" if r["ut"] == "1" else "") for r in shown])
     ax.tick_params(axis="y", length=0)
     ax.set_ylim(-0.8, len(shown) - 0.2)
-    ax.set_xlabel(f"Change in rebuilt score, 2022 to 2023 ({rule}; points)")
+    ax.set_xlabel(f"Change in rebuilt score, 2022 to 2023 ({rule}; points)" if PROFILE == "ijmr"
+                  else f"Change, 2022 to 2023 (points; {rule})")
     ax.legend(handles=[
-        Line2D([], [], color=LIGHT, lw=4.2, label=f"± noise threshold ({Z975:.2f} SE of the change)"),
+        Line2D([], [], color=LIGHT, lw=4.2,
+               label=(f"± noise threshold ({Z975:.2f} SE of the change)" if PROFILE == "ijmr"
+                      else f"± {Z975:.2f} SE of the change")),
         Line2D([], [], marker="o", ls="", markerfacecolor=BLACK, markeredgecolor=BLACK,
                label="Change exceeds noise"),
         Line2D([], [], marker="o", ls="", markerfacecolor="white", markeredgecolor=BLACK,
                label="Change within noise"),
-    ], loc="upper center", bbox_to_anchor=(0.4, -0.06), frameon=False)
+    ], loc="upper center", bbox_to_anchor=(0.4, -0.06 if PROFILE == "ijmr" else -0.045),
+        frameon=False)
     fig.tight_layout()
     save(fig, "figure4")
     return (f"Figure 4. Rule {rule}, indicators {iset.replace(',', ', ')}, rescaled; "
@@ -320,13 +378,42 @@ def figure4() -> str:
             f"{', '.join(dropped)} not plotted (standard error not computable in 2023).")
 
 
-def main() -> int:
+# state names shortened on the single-column figure (JPH); the legend gives them in full
+SHORT = {"Dadra and Nagar Haveli and Daman and Diu": "DNH and DD",
+         "Andaman and Nicobar Islands": "Andaman and Nicobar Is."}
+
+
+def configure(argv: list[str]) -> None:
+    """--profile jph: the Journal of Public Health set; --out DIR: another output directory."""
+    global PROFILE, OUT, WIDTH_IN, FONT_PT, NAMES, RULE_NAMES
+    if "--profile" in argv:
+        PROFILE = argv[argv.index("--profile") + 1]
+        if PROFILE not in ("ijmr", "jph"):
+            raise SystemExit(f"unknown profile {PROFILE!r}")
+    if PROFILE == "jph":
+        OUT = ROOT / "manuscript" / "jph_v2" / "figures"
+        WIDTH_IN = COLUMN_MM / 25.4
+        FONT_PT = 8
+        NAMES = {"figure1": "figure1", "figure3": "figure2", "figure4": "figure3",
+                 "figure2": "figure_s1"}
+        RULE_NAMES = {"R1": "R1, capped", "R2": "R2, uncapped", "R3": "R3, relative to best"}
+        plt.rcParams.update({k: FONT_PT for k in ("font.size", "axes.labelsize",
+                                                  "xtick.labelsize", "ytick.labelsize",
+                                                  "legend.fontsize")})
+        plt.rcParams.update({"axes.linewidth": 0.6, "xtick.major.width": 0.6,
+                             "ytick.major.width": 0.6})
+    if "--out" in argv:
+        OUT = Path(argv[argv.index("--out") + 1]).resolve()
+
+
+def main(argv: list[str] | None = None) -> int:
+    configure(sys.argv[1:] if argv is None else argv)
     notes = [figure1(), figure2(), figure3(), figure4()]
     (OUT / "figure_notes.md").write_text(
         "<!-- Generated by exhibits/make_figures.py. Facts for the figure legends. -->\n\n"
         + "\n\n".join(notes) + "\n", encoding="utf-8", newline="\n")
     for p in sorted(OUT.iterdir()):
-        print(f"wrote {p.relative_to(ROOT)}")
+        print(f"wrote {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")
     return 0
 
 

@@ -356,7 +356,75 @@ def posthoc_labels(root: Path) -> dict[str, str]:
         r = get("Q3 prevalence uncertainty", rule, "", "rho_half_width_at_0")
         w["posthoc.q3.half_width"] = f"±{num(float(r['value']), 2)}"
         w["posthoc.q3.min_detectable"] = f"|ρ| ≈ {num(float(r['value']), 2)}"
+    from src.posthoc import ALPHA, WINSOR, Z95, Z998
+    w["posthoc.winsor"] = f"{pct(WINSOR, 1, 0)}-winsorised"
+    lev = [num(100 * math.erf(z / math.sqrt(2)), 0 if z == Z95 else 1) + "%" for z in (Z95, Z998)]
+    w["posthoc.limits"] = f"{lev[0]} and {lev[1]} limits"
+    w["posthoc.fdr"] = f"false discovery rate of {pct(ALPHA, 1, 0)}"
     return w
+
+
+# The two states that illustrate checklist item 4 (one rise beyond noise, one within it)
+EXAMPLE_STATES = ("Andhra Pradesh", "Puducherry")
+
+
+def revision_labels(root: Path, sel: dict) -> dict[str, str]:
+    """Strings of the revised (JPH) text: the Q1 residual distribution, the published but
+    mismatched indicators, the R2 fit, the exploratory scaling above full achievement, the
+    Q4 indicator points and examples, and the coefficients of variation of plan 8.1."""
+    from src.q2_robust import SETTINGS
+    from src.score import POINTS
+    w: dict[str, str] = {}
+    for rule in ("R1", "R2"):
+        res = sorted(s[rule]["residual"] for s in sel["per_state"].values()
+                     if not s[rule]["excluded"])
+        q = statistics.quantiles(res, n=4, method="inclusive")
+        w[f"q1.{rule}.residual_median_iqr"] = (
+            f"{num(statistics.median(res), DP['score'])} points, interquartile range "
+            f"{rng(num(q[0], DP['score']), num(q[2], DP['score']))}")
+        if any(r < -TOL_BAND for r in res):
+            raise ValueError(f"{rule}: a residual lies below the band; the text says none does")
+    r2 = {k: v["R2"] for k, v in sel["per_state"].items() if not v["R2"]["excluded"]}
+    w["q1.R2.min_residual_state"] = min(r2, key=lambda k: r2[k]["residual"])
+    # indicators published but not as defined: the DEFINITIONAL MISMATCH notes of 2023
+    mism = sorted({int(r["indicator"]) for r in read_csv(root / "data" / "source_choices.csv")
+                   if r["score_year"] == "2023" and "DEFINITIONAL MISMATCH" in r["note"]})
+    if mism != [3, 8]:
+        raise ValueError(f"mismatched indicators {mism}: the text names indicators 3 and 8")
+    w["q1.mismatch_points"] = (
+        f"up to {count(sel['missing_points'] + sum(POINTS[i] for i in mism))} points")
+    ex = [r for r in read_csv(root / "outputs" / "exploratory_udst_scaling_2023.csv")
+          if r["row_type"] == "state" and r["rule"] == "R2" and r["residual"] != ""]
+    above = [float(r["a3_scaled"]) for r in ex if float(r["a3_scaled"]) > 1]
+    w["explore.a3_above_1"] = (f"{k_of_n(len(above), len(ex))} states (up to "
+                               f"{num(max(above), 2)})")
+    from src.q4_change import COMMON
+    w["q4.common_points"] = (f"{count(sum(POINTS[i] for i in COMMON))} of the "
+                             f"{count(sum(POINTS.values()))} points")
+    q4 = [r for r in read_csv(root / "outputs" / "q4_2022_2023_states.csv")
+          if r["rule"] == sel["chosen"] and r["primary"] == "1"]
+    top = max(q4, key=lambda r: float(r["s_2023"]))
+    w["q4.max_2023"] = f"{top['state']}'s {num(float(top['s_2023']), DP['score'])}"
+    by = {r["state"]: r for r in q4}
+    a, b = (by[s] for s in EXAMPLE_STATES)
+    if not (a["exceeds"] == "1" and b["exceeds"] == "0"
+            and 0 < float(a["change"]) < float(b["change"])):
+        raise ValueError("checklist example: the first state must exceed noise, the second "
+                         "rise more but within noise")
+    for st, r in ((EXAMPLE_STATES[0], a), (EXAMPLE_STATES[1], b)):
+        w[f"q4.example.{st}"] = (f"{num(float(r['change']), DP['change'])} points against a "
+                                 f"threshold of {num(float(r['threshold']), DP['score'])}")
+    # plan 8.1: coefficient of variation of weight i, sqrt((1 - w) / (w (c + 1))), over the
+    # available indicators with CTD's weights rescaled to sum to 1
+    c = next(v for _, v in SETTINGS if v is not None)
+    avail = sel["available_indicators"]
+    tot = sum(POINTS[i] for i in avail)
+    cv = [math.sqrt((1 - POINTS[i] / tot) / (POINTS[i] / tot * (c + 1))) for i in avail]
+    w["methods.cv_range"] = f"coefficient of variation of {rng(num(min(cv), 2), num(max(cv), 2))}"
+    return w
+
+
+TOL_BAND = 0.01  # plan 7.2: the band's tolerance
 
 
 def survey_not_covered(root: Path) -> dict[str, list[str]]:
@@ -561,6 +629,9 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
 
     # ---- post hoc (plan section 13, 20 November 2026): outputs/posthoc_summary.csv
     w.update(posthoc_labels(root))
+
+    # ---- strings added for the revised Journal of Public Health text (after peer review)
+    w.update(revision_labels(root, sel))
 
     # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
     ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
@@ -872,51 +943,131 @@ ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
 # 2022 and 2023, survey span 2019-21). Every other year in a checked section must be one of:
 YEARS_ALLOWED = {"2019", "2021", "2022", "2023", "2024"}
 
-# The Journal of Public Health (JPH) version: the same numbers and phrases, with the exhibits
-# renumbered (Table 1 in the text; Supplementary Tables S1-S7 and Supplementary Figure S1
-# online) and the Results giving the key numbers of the tables that moved online.
-_JPH_RENAME = (
-    ("(Table I)", "(Supplementary Table S1)"),
-    ("(Table III)", "(Table 1)"),
-    ("Web tables 1 and 2", "Supplementary Tables S3 and S4"),
-    ("Web table 3", "Supplementary Table S5"),
-    ("(Table IV, Figure 3)", "(Supplementary Table S6, Figure 2)"),
-    ("(Table IV, Figure 4)", "(Supplementary Table S6, Figure 3)"),
-    ("Web table 4", "Supplementary Table S7"),
-)
-
-
-def _renamed(phrases: list[str]) -> list[str]:
-    out = []
-    for ph in phrases:
-        for old, new in _JPH_RENAME:
-            ph = ph.replace(old, new)
-        out.append(ph)
-    return out
-
-
 JPH_SECTION_REQUIRED: dict[str, list[str]] = {
-    "Abstract": [ph.replace("Two indicators ({q1.missing_points})",
-                            "two indicators ({q1.missing_points}) unpublished")
-                 for ph in SECTION_REQUIRED["Abstract"]] + [
-        "Association with prevalence was not established: ρ {q3.R2.primary.rho_ci}",
+    # The revised text after peer review (20 November 2026): the same registered numbers,
+    # the post hoc results beside them (plan section 13, entry 11), the exhibits renumbered
+    # (Table 1 in the text; Supplementary Tables S1-S10 and Supplementary Figure S1 online).
+    "Abstract": [
+        "India TB Reports 2023 and 2024",
+        "National TB Prevalence Survey 2019–21",
+        "the 2023 scores were rebuilt",
+        "With two indicators ({q1.missing_points}) unpublished",
+        "(best: {q1.R2.in_band} states): the score was {q1.verdict}",
+        "ρ with the published ranking {q2.R2.1_weights.c63.spearman_range} over the "
+        "{methods.central_draws}",
+        "Association with prevalence was not established: ρ {q3.R2.primary.rho_ci}, "
+        "{q3.R2.primary.n} units",
+        "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise on a "
+        "rebuilt partial score",
+        "allowing for overdispersion (post hoc), {posthoc.R2.mult95_states} changed unusually",
         "To our knowledge",
     ],
-    "Methods": list(SECTION_REQUIRED["Methods"]),
-    "Results": _renamed(SECTION_REQUIRED["Results"]) + [
-        "No rule was admissible (Supplementary Table S2): the residual lay in the band for "
+    "Methods": [ph for ph in SECTION_REQUIRED["Methods"]] + [
+        "and {methods.n_posthoc_entries}, which adds post hoc analyses; deviations and notes are "
+        "distinguished in Supplementary Table S1",
+        "(R1, capped)", "(R2, uncapped)",
+        "a {methods.cv_range}", "centred on equal weights",
+        "on indicators 1, 2, 3, 4 and 6 ({q4.common_points})",
+        "its half-width is {posthoc.q3.half_width}",
+        "(φ, from {posthoc.winsor} z-scores)", "states outside the {posthoc.limits}",
+        "(Bonferroni, α = {posthoc.n_tests}; Benjamini–Hochberg, {posthoc.fdr})",
+        "Oldham's method",
+    ],
+    "Results": [
+        "worth {q1.missing_points}, are not published by state (Supplementary Table S2)",
+        "{q1.mismatch_points} are unpublished or mismatched, whereas the band allows for "
+        "{q1.missing_points}",
+        "Of the {q1.n_published}, Karnataka",
+        "its indicator 5 denominator is blank",
+        "No rule was admissible (Supplementary Table S3): the residual lay in the band for "
         "{q1.R1.in_band} states under R1 and {q1.R3.in_band} under R3",
-        "Supplementary Figure S1 shows how often",
+        "the residual lay in the band for {q1.R2.in_band} states (Figure 1)",
+        "(R2, median {q1.R2.residual_median_iqr}; R1, median {q1.R1.residual_median_iqr}; "
+        "Supplementary Table S4)",
+        "every state outside the band lay above it",
+        "(R4 could not be tested)",
+        "R2 was carried into Q2–Q4",
+        "its lowest residual is {q1.R2.min_residual_state}'s, inflated by an indicator 4 "
+        "{q4.ind4_error.a}",
+        "({q4.max_2023} in Q4)",
+        "In the exploratory analysis, with indicator 3 scaled to CTD's national figure, "
+        "{explore.R2.in_band} states lay in the band under R2 (R1, {explore.R1.in_band}; "
+        "{explore.R3.unchanged}); the exception, {explore.R2.outside}, lay below it",
+        "above full in {explore.a3_above_1}",
+        "ρ with the published ranking was {q2.R2.1_weights.c63.spearman_range} over the "
+        "{methods.central_draws} (Table 1, Supplementary Figure S1)",
+        "Leaving out indicator 1 or indicator 3",
+        "leaving out indicator 4",
+        "Supplementary Tables S5 and S6",
+        "The survey prints {q3.units_printed}, from {q3.clusters}",
+        "{q3.units_analysed} representing {q3.states_covered} were analysed",
+        "{q3.survey_excluded} not covered, and {q3.survey_not_named} not named by the survey",
+        "was ρ {q3.R2.primary.rho_ci}, {q3.R2.primary.n} (Supplementary Table S7, Figure 2)",
+        "the median ρ was {posthoc.R2.q3.rho_bootstrap} under R2 and "
+        "{posthoc.R1.q3.rho_bootstrap} under R1 over the {methods.central_draws} "
+        "(Supplementary Table S8)",
         "With MDR/RR-TB treatment success, an outcome outside the score, ρ was "
         "{q3.R2.secondary.rho_ci}, {q3.R2.secondary.n}",
+        "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise "
+        "(Supplementary Table S7, Figure 3)",
+        "its 2023 SE could not be computed",
         "Without indicator 1, the count was {q4.R2.no1.exceeds}",
+        "(z > {posthoc.z_bonferroni}) the count was {posthoc.R2.bonferroni} and "
+        "{posthoc.R1.bonferroni}",
+        "with Benjamini–Hochberg control {posthoc.R2.bh} and {posthoc.R1.bh}",
+        "about {posthoc.expected_fp} states would exceed noise by chance",
+        "(φ {posthoc.R2.phi}; τ² {posthoc.R2.tau2}; Supplementary Tables S8–S10)",
+        "with multiplicative overdispersion, {posthoc.R2.outside95_mult} and "
+        "{posthoc.R2.outside998_mult} changed unusually; with additive overdispersion, "
+        "{posthoc.R2.outside95_add} and {posthoc.R2.outside998_add}",
+        "Wilson SEs changed the registered verdict of {posthoc.R2.wilson_changed.registered}",
         "The 2022 score was not clearly associated with the change: ρ {q4.R2.all.rho_ci}, "
         "{q4.R2.all.rho_n}",
+        "positively correlated under R2, r {posthoc.R2.all.oldham_r}, but not clearly under "
+        "R1, r {posthoc.R1.all.oldham_r}",
     ],
-    "Discussion": list(SECTION_REQUIRED["Discussion"]) + [
-        "; Supplementary Table S2 footnote)", "(Supplementary Figure S1)",
+    "Discussion": [
+        "(ρ with the published ranking {q2.R2.1_weights.c63.spearman_range})",
+        "brought {explore.R2.in_band} states into the band under R2 and {explore.R1.in_band} "
+        "under R1 (exploratory)",
+        "allowing for overdispersion left {posthoc.R2.mult95_states}",
+        "uninformative below {posthoc.q3.min_detectable}",
+        "Andhra Pradesh rose by {q4.example.Andhra Pradesh}, beyond noise; Puducherry rose by "
+        "{q4.example.Puducherry}, within it",
+        "({ind3.annexure_share} against {ind3.table11_1_share} of notified patients; "
+        "Supplementary Table S3 footnote)",
+        "possibly through programme capacity shared with indicators 4 and 6 (a direction not "
+        "pre-specified)",
+        "shows that a change is detectable, which is necessary but not sufficient",
+        "the by-sex total of annexure 1.6",
+        "{q4.se0_counts}", "{q4.se0_cause}",
+        "treatment-success {q4.ind4_error.a} is an artefact of the same-period denominator "
+        "(Supplementary Table S9)",
+        "R3's count, {q4.R3.all.exceeds}, reflects",
+        "rests on {q3.units_analysed}", "the survey (2019–21)",
+        "omits {q3.survey_not_named}, which is not named by the survey",
     ],
 }
+
+# The labels the JPH text must carry: the shared list without the two strings that the
+# revised Discussion replaced with Oldham's method, plus the post hoc and revision labels
+JPH_REQUIRED = [lab for lab in REQUIRED
+                if lab not in ("q4.R2.no1.rho_ci", "q4.R1.no1.rho_context")] + [
+    "posthoc.R2.bonferroni", "posthoc.R1.bonferroni", "posthoc.R2.bh", "posthoc.R1.bh",
+    "posthoc.z_bonferroni", "posthoc.expected_fp", "posthoc.n_tests",
+    "posthoc.R2.phi", "posthoc.R2.tau2", "posthoc.R2.outside95_mult",
+    "posthoc.R2.outside998_mult", "posthoc.R2.outside95_add", "posthoc.R2.outside998_add",
+    "posthoc.R2.mult95_states", "posthoc.R2.all.oldham_r", "posthoc.R1.all.oldham_r",
+    "posthoc.R2.q3.rho_bootstrap", "posthoc.R1.q3.rho_bootstrap", "posthoc.q3.half_width",
+    "posthoc.q3.min_detectable", "posthoc.winsor", "posthoc.limits", "posthoc.fdr",
+    "q1.R1.residual_median_iqr", "q1.R2.residual_median_iqr", "q1.mismatch_points",
+    "explore.a3_above_1", "q4.common_points", "q4.max_2023", "q4.example.*",
+    "methods.cv_range", "methods.n_posthoc_entries", "q4.R3.all.exceeds",
+]
+# the abstract no longer quotes the largest band violation (Referee B's shorter sentence);
+# it quotes the post hoc overdispersion count
+JPH_ABSTRACT_REQUIRED = [lab for lab in ABSTRACT_REQUIRED if lab != "q1.R2.max_violation"] + [
+    "posthoc.R2.mult95_states"]
 
 
 # --------------------------------------------------------------------------------------
@@ -962,6 +1113,15 @@ class Profile:
     main_max: int = 3000
     # further (docx, section) pairs whose number tokens must equal manuscript.md's
     docx_extra: tuple[tuple[str, str], ...] = ()
+    # the catalogue labels the text must carry, and those the abstract must carry
+    required: tuple[str, ...] = ()
+    abstract_required: tuple[str, ...] = ()
+
+    def req(self) -> list[str]:
+        return list(self.required) or REQUIRED
+
+    def abstract_req(self) -> list[str]:
+        return list(self.abstract_required) or ABSTRACT_REQUIRED
 
 
 IJMR = Profile(
@@ -994,7 +1154,7 @@ JPH = Profile(
         Exhibit("Figure", "Figures?", ARABIC, False, r"(?m)^\*\*Figure (\d+)\.\*\*",
                 (1, 2, 3), True),
         Exhibit("Supplementary Table", "Supplementary Tables?", r"S\d+\b", False,
-                r"(?m)^\*\*Supplementary Table S(\d+)\.", tuple(range(1, 8)), False),
+                r"(?m)^\*\*Supplementary Table S(\d+)\.", tuple(range(1, 11)), False),
         Exhibit("Supplementary Figure", "Supplementary Figures?", r"S\d+\b", False,
                 r"(?m)^\*\*Supplementary Figure S(\d+)\.\*\*", (1,), False),
     ),
@@ -1014,6 +1174,8 @@ JPH = Profile(
     main_min=2000,
     main_max=3000,
     docx_extra=(("06_supplementary_material.docx", "Supplementary figure"),),
+    required=tuple(JPH_REQUIRED),
+    abstract_required=tuple(JPH_ABSTRACT_REQUIRED),
 )
 
 PROFILES = {p.name: p for p in (IJMR, JPH)}
@@ -1224,13 +1386,13 @@ def problems(root: Path, text: str, profile: Profile | None = None,
     profile = profile or IJMR
     cp = profile.count_pct
     out = []
-    for label, v in missing(text, want(root, count_pct=cp)):
+    for label, v in missing(text, want(root, profile.req(), cp)):
         out.append(f"MISSING {label}: {v!r}")
     abstract = section(text, "Abstract")
     if not abstract.strip():
         out.append("MISSING the abstract (no '## Abstract' section)")
     else:
-        for label, v in missing(abstract, want(root, ABSTRACT_REQUIRED, cp)):
+        for label, v in missing(abstract, want(root, profile.abstract_req(), cp)):
             out.append(f"MISSING in the abstract {label}: {v!r}")
     for n in unaccounted(text, catalogue_cached(root, cp), list(profile.allow)):
         out.append(f"UNACCOUNTED number in prose: {n!r}")
@@ -1273,8 +1435,8 @@ def main(root: Path = ROOT, argv: list[str] | None = None) -> int:
         print(ln)
     n_ph = sum(len(v) for v in profile.section_required.values())
     cp = profile.count_pct
-    print(f"{len(want(root, count_pct=cp))} expected strings "
-          f"({len(want(root, ABSTRACT_REQUIRED, cp))} in the "
+    print(f"{len(want(root, profile.req(), cp))} expected strings "
+          f"({len(want(root, profile.abstract_req(), cp))} in the "
           f"abstract), {n_ph} section phrases; {len(found)} problem(s)")
     return 1 if found else 0
 
