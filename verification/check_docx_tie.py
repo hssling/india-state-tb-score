@@ -18,11 +18,15 @@ Prints "SKIPPED" and exits 0 when manuscript/ or the .docx files are absent (all
 git-ignored). Exit 1 on any difference.
 
 --manuscript-dir DIR (default manuscript) ties DIR's set with DIR's profile
-(check_manuscript_numbers.PROFILES): for the Journal of Public Health set (manuscript/jph_v2)
-the files are 02_manuscript_anonymised.docx and 01_title_page.docx (title_page.md), the
-limits are that journal's (abstract at most 200 words, main text 2,000 to 3,000), the
-checked sections are the profile's, and the Supplementary figure section of
-06_supplementary_material.docx is tied as well.
+(check_manuscript_numbers.PROFILES). The Journal of Public Health set (manuscript/jph_v2;
+single-anonymised review, so nothing is blinded) is one main file, 01_manuscript.docx: its
+title page (tied to title_page.md) is page 1, the abstract with its keywords stands alone on
+page 2 (a page break before the "Abstract" heading, none inside the abstract, and one after
+the Keywords paragraph, before "Introduction"), then the text, the end matter, the
+references, Table I and the legends. The limits are that journal's (abstract at most 200
+words, main text 2,000 to 3,000), the checked sections are the profile's, including the
+end-matter Data availability section, and the Supplementary figure section of
+05_supplementary_material.docx is tied as well.
 """
 import json
 import re
@@ -40,8 +44,10 @@ from verification import check_manuscript_numbers as cmn  # noqa: E402
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 HEADINGS = ("Abstract", "Introduction", "Methods", "Results", "Discussion", "References",
             "Tables", "Legends to Figures")
-# further section headings of the Journal of Public Health files
-JPH_HEADINGS = ("Supplementary material", "Supplementary tables", "Supplementary figure")
+# further section headings of the Journal of Public Health files (with the end matter)
+JPH_HEADINGS = ("Supplementary material", "Supplementary tables", "Supplementary figure",
+                "Funding", "Acknowledgements", "Conflict of interest", "Author contributions",
+                "Data availability")
 
 
 def docx_paragraphs(path: Path) -> list[tuple[str, bool]]:
@@ -69,6 +75,66 @@ def docx_paragraphs(path: Path) -> list[tuple[str, bool]]:
             for p in el.iter(f"{W}p"):
                 para(p, True)
     return out
+
+
+def docx_items(path: Path) -> list[tuple[str, str]]:
+    """The body in order, as ("p", text) for a paragraph outside a table, ("t", "") for a
+    table and ("break", "") for a page break (a page-break run, or a paragraph that starts a
+    new page)."""
+    with zipfile.ZipFile(path) as z:
+        root = ET.fromstring(z.read("word/document.xml"))
+    out: list[tuple[str, str]] = []
+    for el in root.find(f"{W}body"):
+        if el.tag == f"{W}tbl":
+            out.append(("t", ""))
+            continue
+        if el.tag != f"{W}p":
+            continue
+        if el.find(f"{W}pPr/{W}pageBreakBefore") is not None:
+            out.append(("break", ""))
+        text = []
+        for r in el.iter(f"{W}r"):
+            for t in r:
+                if t.tag == f"{W}br" and t.get(f"{W}type") == "page":
+                    if "".join(text).strip():
+                        out.append(("p", "".join(text)))
+                    text = []
+                    out.append(("break", ""))
+                elif t.tag == f"{W}t":
+                    text.append(t.text or "")
+                elif t.tag in (f"{W}br", f"{W}tab"):
+                    text.append(" ")
+        if "".join(text).strip():
+            out.append(("p", "".join(text)))
+    return out
+
+
+def title_page_layout(path: Path) -> tuple[str, list[str]]:
+    """(text of the title page, problems): the title page is page 1, and the abstract with
+    its keywords stands alone on page 2."""
+    items = docx_items(path)
+    out: list[str] = []
+    try:
+        a = items.index(("p", "Abstract"))
+        i = next(k for k, it in enumerate(items) if it == ("p", "Introduction"))
+    except (ValueError, StopIteration):
+        return "", [f"{path.name}: no 'Abstract' or 'Introduction' heading"]
+    before = items[:a]
+    title = "\n".join(t for kind, t in before if kind == "p")
+    if not title.strip():
+        out.append(f"{path.name}: no title page before the abstract")
+    if any(kind == "break" for kind, _ in before[:-1]) or not before or before[-1][0] != "break":
+        out.append(f"{path.name}: the title page is not page 1 alone (one page break must "
+                   "end it, directly before 'Abstract')")
+    page2 = items[a + 1:i]
+    if not page2 or page2[-1][0] != "break":
+        out.append(f"{path.name}: no page break between the abstract page and 'Introduction'")
+    body = [it for it in page2[:-1]]
+    if any(kind != "p" for kind, _ in body):
+        out.append(f"{path.name}: the abstract page holds a page break or a table")
+    elif not body or not body[-1][1].startswith("Keywords"):
+        out.append(f"{path.name}: the abstract page does not end with the keywords")
+    return title, out
 
 
 def docx_sections(path: Path, headings: tuple[str, ...] = HEADINGS) -> dict[str, str]:
@@ -136,7 +202,11 @@ def problems(root: Path, profile: "cmn.Profile | None" = None,
         msg = compare(tokens(extra[name]), tokens(md_clean(cmn.section(ms, name))))
         if msg:
             out.append(f"{docx_name} {name}: {msg}")
-    fp_docx = "\n".join(t for t, _ in docx_paragraphs(sub / profile.title_docx))
+    if profile.title_in_ms:
+        fp_docx, layout = title_page_layout(sub / profile.ms_docx)
+        out += layout
+    else:
+        fp_docx = "\n".join(t for t, _ in docx_paragraphs(sub / profile.title_docx))
     fp_md = (ms_dir / profile.title_md).read_text(encoding="utf-8")
     msg = compare(only_numbers(fp_docx), only_numbers(md_clean(fp_md)))
     if msg:

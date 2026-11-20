@@ -434,6 +434,23 @@ def revision_labels(root: Path, sel: dict) -> dict[str, str]:
 TOL_BAND = 0.01  # plan 7.2: the band's tolerance
 
 
+def release_labels(root: Path) -> dict[str, str]:
+    """The archived release (README's "Archived release" line and CITATION.cff) and the
+    registration commit (verification/check_plan_order.REGISTRATION)."""
+    from verification.check_plan_order import REGISTRATION
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    m = re.search(r"\*\*Archived release:\*\* v(\d+\.\d+\.\d+), doi:\[(10\.\d+/zenodo\.\d+)\]",
+                  readme)
+    if not m:
+        raise ValueError("README.md: no 'Archived release' line")
+    cff = (root / "CITATION.cff").read_text(encoding="utf-8")
+    v = re.search(r'^version: "v(\d+\.\d+\.\d+)"', cff, re.M)
+    if not v or v.group(1) != m.group(1):
+        raise ValueError("CITATION.cff and README.md disagree on the release version")
+    return {"data.doi": m.group(2), "data.version": f"version {m.group(1)}",
+            "methods.commit": f"commit {REGISTRATION[:7]}", "data.commit": REGISTRATION}
+
+
 def survey_not_covered(root: Path) -> dict[str, list[str]]:
     """States the survey excludes, and states it does not name (data/extracted)."""
     rows = read_csv(root / "data" / "extracted" / "ntps_not_covered.csv")
@@ -682,6 +699,7 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
     w["methods.sat_level"] = num(SAT_LEVEL, 2)
     w["methods.registration"] = pf["registration"]
     w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated entries"
+    w.update(release_labels(root))
     w["methods.n_posthoc_entries"] = (f"{WORDS[pf['n_posthoc_entries']]} added before journal "
                                        "submission")
     env = environment(root)
@@ -769,6 +787,10 @@ ALLOW = [
 # Supplementary items of an online supplement ("Supplementary Tables S3 and S4")
 SUPP_NO = r"S\d+" + END
 ALLOW_SUPPLEMENT = rf"\bSupplementary (?:Table|Figure)s? {SUPP_NO}(?:(?:–| and |, ){SUPP_NO})*"
+# figure labels of a legend, abbreviated as JPH asks ("**Fig. 1.**", "Supplementary Fig. S1")
+ALLOW_FIG = r"\bFig\. S?\d+" + END
+# the name of the digest algorithm (Data availability: "SHA-256")
+ALLOW_SHA = r"\bSHA-256\b"
 # the item numbers of a numbered list whose items open in bold ("1. **Publish ...**")
 ALLOW_LIST = r"(?m)^[1-9]\. (?=\*\*)"
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -972,10 +994,11 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "To our knowledge",
     ],
     "Methods": [ph for ph in SECTION_REQUIRED["Methods"]] + [
+        "(https://github.com/hssling/india-state-tb-score, {methods.commit}; archived release^17^)",
         "It also logs {methods.n_posthoc_entries}, after an internal critical review of the draft, "
         "which adds post hoc analyses",
         "deviations and notes are distinguished in Supplementary Table S1",
-        "Oldham's method,^23^",
+        "Oldham's method,^24^",
         "(R1, capped)", "(R2, uncapped)",
         "a {methods.cv_range} over the available indicators (plan §8.1)",
         "centred on equal weights",
@@ -1009,7 +1032,7 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "{explore.R3.unchanged}); the exception, {explore.R2.outside}, lay below it",
         "above full in {explore.a3_above_1}",
         "ρ with the published ranking was {q2.R2.1_weights.c63.spearman_range} over the "
-        "{methods.central_draws} (Table 1, Supplementary Figure S1)",
+        "{methods.central_draws} (Table I, Supplementary Figure S1)",
         "Leaving out indicator 1 or indicator 3",
         "leaving out indicator 4",
         "Supplementary Tables S5 and S6",
@@ -1062,6 +1085,12 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "rests on {q3.units_analysed}", "the survey (2019–21)",
         "omits {q3.survey_not_named}, which is not named by the survey",
     ],
+    # end matter (single-anonymised review: the repository is named)
+    "Data availability": [
+        "https://github.com/hssling/india-state-tb-score",
+        "https://doi.org/{data.doi} ({data.version})",
+        "registered at commit {data.commit}, pushed on {methods.registration}",
+    ],
 }
 
 # The labels the JPH text must carry: the shared list without the two strings that the
@@ -1079,6 +1108,7 @@ JPH_REQUIRED = [lab for lab in REQUIRED
     "q1.R1.residual_median_iqr", "q1.R2.residual_median_iqr", "q1.mismatch_points",
     "explore.a3_above_1", "q4.common_points", "q4.max_2023", "q4.example.*",
     "methods.cv_range", "methods.n_posthoc_entries", "q4.R3.all.exceeds",
+    "methods.commit", "data.doi", "data.version", "data.commit",
 ]
 # the abstract no longer quotes the largest band violation (a shorter sentence);
 # it quotes the post hoc overdispersion count
@@ -1122,6 +1152,8 @@ class Profile:
     abstract_headings: tuple[str, ...] = ()  # run-in headings the abstract must carry
     # the submission documents and their limits (Microsoft Word's counts)
     ms_docx: str = "02_blinded_manuscript.docx"
+    # the title page is page 1 of the main file, and the abstract stands alone on page 2
+    title_in_ms: bool = False
     title_docx: str = "01_first_page.docx"
     title_md: str = "first_page.md"
     abstract_max: int = 250
@@ -1163,33 +1195,36 @@ IJMR = Profile(
 JPH = Profile(
     name="jph",
     dir="manuscript/jph_v2",
-    section_order=SECTION_ORDER + ("Supplementary figure",),
+    section_order=SECTION_ORDER + ("Supplementary figure", "Data availability"),
     section_required=JPH_SECTION_REQUIRED,
     exhibits=(
-        Exhibit("Table", "Tables?", ARABIC, False, r"(?m)^\*\*Table (\d+)\.", (1,), True),
-        Exhibit("Figure", "Figures?", ARABIC, False, r"(?m)^\*\*Figure (\d+)\.\*\*",
+        # JPH: tables "numbered consecutively with Roman numerals"; figures cited as
+        # "Figure 1" in the text and abbreviated to "Fig. 1." only in the legend
+        Exhibit("Table", "Tables?", r"[IVX]+\b", True, r"(?m)^\*\*Table ([IVX]+)\.", (1,), True),
+        Exhibit("Figure", "Figures?", ARABIC, False, r"(?m)^\*\*Fig\. (\d+)\.\*\*",
                 (1, 2, 3), True),
         Exhibit("Supplementary Table", "Supplementary Tables?", r"S\d+\b", False,
                 r"(?m)^\*\*Supplementary Table S(\d+)\.", tuple(range(1, 11)), False),
         Exhibit("Supplementary Figure", "Supplementary Figures?", r"S\d+\b", False,
-                r"(?m)^\*\*Supplementary Figure S(\d+)\.\*\*", (1,), False),
+                r"(?m)^\*\*Supplementary Fig\. S(\d+)\.\*\*", (1,), False),
     ),
     display_limits=((("Table", "Figure"), 4),),  # JPH: "no more than 4 tables or figures"
     # JPH states no number style; IJMR's is kept so that no number changes
     count_pct=COUNT_PCT,
-    allow=tuple(ALLOW) + (ALLOW_SUPPLEMENT, ALLOW_LIST),
-    label_strip=r"(?m)^\*\*(?:Supplementary )?(?:Figure|Table) S?\d+\.\*\*",
+    allow=tuple(ALLOW) + (ALLOW_SUPPLEMENT, ALLOW_LIST, ALLOW_FIG, ALLOW_SHA),
+    label_strip=r"(?m)^\*\*(?:Supplementary )?(?:Fig\.|Table) S?[IVX\d]+\.\*\*",
     supplement_heading="# Supplementary tables",
     required_headings=("### Main finding of this study", "### What is already known on this topic",
                        "### What this study adds", "### Limitations of this study"),
     abstract_headings=("**Background:**", "**Methods:**", "**Results:**", "**Conclusions:**"),
-    ms_docx="02_manuscript_anonymised.docx",
-    title_docx="01_title_page.docx",
+    ms_docx="01_manuscript.docx",
+    title_docx="01_manuscript.docx",
+    title_in_ms=True,
     title_md="title_page.md",
     abstract_max=200,
     main_min=2000,
     main_max=3000,
-    docx_extra=(("06_supplementary_material.docx", "Supplementary figure"),),
+    docx_extra=(("05_supplementary_material.docx", "Supplementary figure"),),
     required=tuple(JPH_REQUIRED),
     abstract_required=tuple(JPH_ABSTRACT_REQUIRED),
 )

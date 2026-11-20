@@ -99,7 +99,8 @@ def test_skips_when_manuscript_md_absent(tmp_path, capsys):
 def _fake_repo(tmp_path):
     for d in ("outputs", "data", "docs"):
         shutil.copytree(ROOT / d, tmp_path / d)
-    shutil.copy(ROOT / "ENVIRONMENT.md", tmp_path / "ENVIRONMENT.md")
+    for f in ("ENVIRONMENT.md", "README.md", "CITATION.cff"):  # versions, release DOI
+        shutil.copy(ROOT / f, tmp_path / f)
     (tmp_path / "manuscript").mkdir()
     return tmp_path
 

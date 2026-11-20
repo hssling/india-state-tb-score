@@ -38,7 +38,7 @@ Draws: 10,000 draws (Supplementary Table S1), indicators 1, 2 and 3 (India TB Re
 
 ## Results
 
-Supplementary Table S2 shows 85,231 of 2,360,036 (3.6%) (Figure 1). Table 1, Supplementary Figure S1 and Supplementary Tables S3 and S4. Figure 2, Supplementary Table S5.
+Supplementary Table S2 shows 85,231 of 2,360,036 (3.6%) (Figure 1). Table I, Supplementary Figure S1 and Supplementary Tables S3 and S4. Figure 2, Supplementary Table S5.
 
 ## Discussion
 
@@ -69,7 +69,7 @@ Text.
 
 ## Tables
 
-**Table 1. A**
+**Table I. A**
 
 | a | b |
 |---|---|
@@ -99,17 +99,17 @@ Text.
 
 ## Legends to Figures
 
-**Figure 1.** One, n = 5.
+**Fig. 1.** One, n = 5.
 
 Alt text: a plot.
 
-**Figure 2.** Two.
+**Fig. 2.** Two.
 
-**Figure 3.** Three.
+**Fig. 3.** Three.
 
 ## Supplementary figure
 
-**Supplementary Figure S1.** Four, 7 states.
+**Supplementary Fig. S1.** Four, 7 states.
 """
 
 
@@ -132,7 +132,9 @@ def test_profile_constants():
     assert cmn.k_of_n_pct(24, 35) == "24 of 35 (68.6%)"
     assert cmn.k_of_n_pct(24, 35, "{pct} ({k_of_n})") == "68.6% (24 of 35)"
     assert [e.roman for e in cmn.IJMR.exhibits if e.kind == "Table"] == [True]
-    assert [e.roman for e in cmn.JPH.exhibits if e.kind == "Table"] == [False]
+    assert [e.roman for e in cmn.JPH.exhibits if e.kind == "Table"] == [True]  # Table I
+    assert cmn.JPH.title_in_ms and cmn.JPH.ms_docx == cmn.JPH.title_docx == "01_manuscript.docx"
+    assert "Data availability" in cmn.JPH.section_order
     assert dict(cmn.IJMR.display_limits) == {("Table",): 4, ("Figure",): 4}
     assert dict(cmn.JPH.display_limits) == {("Table", "Figure"): 4}
     assert cmn.IJMR.allow == tuple(cmn.ALLOW)
@@ -156,7 +158,7 @@ def test_jph_citations_and_exhibits():
     assert cmn.exhibit_problems(JPH_FIXTURE, cmn.JPH) == []
     swapped = JPH_FIXTURE.replace("Supplementary Tables S3 and S4", "Supplementary Tables S4 and S3")
     assert any("out of order" in p for p in cmn.exhibit_problems(swapped, cmn.JPH))
-    extra = JPH_FIXTURE.replace("**Figure 3.** Three.", "**Figure 3.** Three.\n\n**Figure 4.** Four.")
+    extra = JPH_FIXTURE.replace("**Fig. 3.** Three.", "**Fig. 3.** Three.\n\n**Fig. 4.** Four.")
     extra = extra.replace("Figure 3);", "Figure 3); Figure 4;")
     msgs = " ".join(cmn.exhibit_problems(extra, cmn.JPH))
     assert "limit 4" in msgs and "captions found" in msgs
@@ -225,11 +227,13 @@ def test_make_tables_profiles():
     ijmr = mt.render(ROOT)
     assert mt.render(ROOT, "ijmr") == ijmr
     jph = mt.render(ROOT, "jph")
-    assert not re.search(r"\bTables? [IVX]+\b|Web table", jph)
-    caps = re.findall(r"(?m)^\*\*((?:Supplementary )?Table S?\d+)\.", jph)
-    assert caps == ["Table 1"] + [f"Supplementary Table S{i}" for i in range(1, 11)]
-    assert "carried into Table 1 and Supplementary Table S7" in jph
-    assert "layout as Table 1" in jph and "Data Availability Statement" in jph
+    assert not re.search(r"\bTables? (?:II|III|IV)\b|Web table", jph)  # only Table I
+    caps = re.findall(r"(?m)^\*\*((?:Supplementary )?Table S?[IVX\d]+)\.", jph)
+    assert caps == ["Table I"] + [f"Supplementary Table S{i}" for i in range(1, 11)]
+    assert "carried into Table I and Supplementary Table S7" in jph
+    assert "layout as Table I" in jph and "Data Availability Statement" in jph
+    # footnotes as lower-case letters (JPH), section references ("§13") kept
+    assert "^a^" in jph and "§13" in jph and "†" not in jph and "‡" not in jph
     # the flat Dirichlet is labelled as centred on equal weights in the JPH tables only
     assert "centred on equal weights (α = 1 for each indicator)" in jph
     assert "centred on equal weights" not in ijmr
@@ -266,3 +270,30 @@ def test_jph_profile_requires_post_hoc_labels():
                        cat["posthoc.R2.bonferroni"].replace("23 of", "21 of"))
     assert cmn.missing(bad, want) == [("posthoc.R2.bonferroni", cat["posthoc.R2.bonferroni"])]
     assert "21" in cmn.unaccounted(bad, cat, list(cmn.JPH.allow))
+
+
+def _docx(tmp_path, parts):
+    docx = pytest.importorskip("docx")
+    from docx.enum.text import WD_BREAK
+    d = docx.Document()
+    for part in parts:
+        if part == "BREAK":
+            d.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+        else:
+            d.add_paragraph(part)
+    path = tmp_path / "ms.docx"
+    d.save(str(path))
+    return path
+
+
+def test_jph_title_page_and_abstract_page_layout(tmp_path):
+    good = ["Title", "Professor", "BREAK", "Abstract", "Background: text.", "Keywords: A; B",
+            "BREAK", "Introduction", "Text."]
+    title, probs = tie.title_page_layout(_docx(tmp_path, good))
+    assert probs == [] and "Professor" in title
+    no_break = [x for i, x in enumerate(good) if i != 6]  # abstract runs into the text
+    assert any("Introduction" in p for p in tie.title_page_layout(_docx(tmp_path, no_break))[1])
+    mid = good[:5] + ["BREAK"] + good[5:]  # a page break inside the abstract page
+    assert tie.title_page_layout(_docx(tmp_path, mid))[1]
+    no_title = good[2:]
+    assert tie.title_page_layout(_docx(tmp_path, no_title))[1]
