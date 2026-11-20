@@ -1,6 +1,6 @@
 # India's State TB Score: reproducibility, robustness and validity
 
-**Archived release:** v1.0.0, doi:[10.5281/zenodo.24323627](https://doi.org/10.5281/zenodo.24323627) (concept DOI, always the latest version: [10.5281/zenodo.24323626](https://doi.org/10.5281/zenodo.24323626)).
+**Archived release:** v1.1.0, doi:[10.5281/zenodo.24391191](https://doi.org/10.5281/zenodo.24391191) (v1.0.0: [10.5281/zenodo.24323627](https://doi.org/10.5281/zenodo.24323627)) (concept DOI, always the latest version: [10.5281/zenodo.24323626](https://doi.org/10.5281/zenodo.24323626)).
 
 India's Central TB Division (CTD) rates every state and union territory with a
 **State TB Score**: nine programme indicators with fixed maximum points summing
