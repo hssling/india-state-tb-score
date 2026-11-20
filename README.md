@@ -42,6 +42,30 @@ report of the ICMR National TB Prevalence Survey 2019–21. The source PDFs are
 not redistributed here. A fetch script downloads them from their official URLs
 and verifies each against the SHA-256 digest recorded in the plan.
 
+## Post hoc analyses (after peer review)
+
+Four analyses were added on 20 November 2026, after two referees reviewed the
+manuscript, and are logged as a dated entry in section 13 of the plan. They are **post
+hoc**: not pre-specified, labelled "post hoc" in code and output, reported beside the
+registered results and never in place of them. They use their own seed (20261120), and
+are run under the registered primary rule R2 with R1 beside it.
+
+1. **Q4 against overdispersed noise.** Each state's 2022 to 2023 change is compared with
+   the inverse-variance-weighted mean change, with funnel limits widened by multiplicative
+   (Spiegelhalter 2005) and additive (DerSimonian–Laird) overdispersion, and with
+   Wilson-interval standard errors for proportions of 0 or 1 as a sensitivity analysis.
+   This asks whether a change is unusual relative to other states; the registered test
+   asks whether it differs from zero beyond sampling noise.
+2. **Q4 multiplicity.** The registered count with Bonferroni and Benjamini–Hochberg
+   adjustment, and the expected number of false positives.
+3. **Q4 regression to the mean.** Oldham's method (change against the two-year mean),
+   with a bootstrap interval.
+4. **Q3 uncertainty in prevalence.** Survey prevalence drawn from a lognormal fitted to
+   each unit's published 95% CI, with the units resampled.
+
+`verification/check_posthoc_outputs.py` recomputes their point values with independent
+code; the bootstrap intervals are reproduced by the seeded build.
+
 ## Reproducing the analysis
 
 Python 3.11 or later. Analysis code uses the standard library only;
@@ -65,6 +89,7 @@ python -I src/q2_robust.py 2023
 python -I src/q3_validity.py 2023
 python -I src/q4_change.py
 python -I src/explore_udst.py        # exploratory, logged in plan section 13
+python -I src/posthoc.py             # post hoc (after peer review), plan section 13
 
 # 4. Exhibits: tables and figures of the manuscript (written to manuscript/,
 #    which is kept private and not in this repository; needs matplotlib)
@@ -72,7 +97,7 @@ python -I exhibits/make_tables.py
 python -I exhibits/make_figures.py
 
 # 5. Verify: tests, analyses, extraction totals, plan order, deviations log,
-#    and byte-for-byte reproduction of the committed outputs
+#    the post hoc point values, and byte-for-byte reproduction of the committed outputs
 python -I verification/check_all.py
 ```
 
@@ -117,11 +142,18 @@ Outputs (`outputs/`):
 - `exploratory_udst_scaling_2023.csv`: **exploratory, not pre-specified** (plan
   section 13): the Q1 band test repeated with each state's indicator 3
   achievement scaled to CTD's national figure.
+- `posthoc_q4_states.csv`: **post hoc, after peer review** (plan section 13, 20
+  November 2026): for each state under R2 and R1, and with binomial or Wilson standard
+  errors, the 2022 to 2023 change, its z-score, the registered verdict, the Bonferroni and
+  Benjamini–Hochberg verdicts and the overdispersed funnel flags.
+- `posthoc_summary.csv`: **post hoc**: overdispersion factor, between-state variance and
+  counts outside the funnel limits; multiplicity counts; Oldham's correlation with its
+  bootstrap interval; and the Q3 correlation with prevalence uncertainty propagated.
 
 Code: `src/score.py` (indicator achievement and scoring rules), `src/states.py`
 (canonical state and union territory names), `src/extract/` (table extractors),
 `src/q1_reproduce.py` to `src/q4_change.py` (analyses), `src/explore_udst.py`
-(the exploratory analysis), `exhibits/` (the scripts that render the
+(the exploratory analysis), `src/posthoc.py` (the post hoc analyses), `exhibits/` (the scripts that render the
 manuscript's tables and figures from `outputs/` and `data/`),
 `tools/fetch_sources.py` (download and verification), `tests/` (unit tests),
 `verification/` (checks). The analyses need the standard library only;

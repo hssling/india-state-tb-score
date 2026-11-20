@@ -1,9 +1,11 @@
-"""Check that every 'exploratory' label in outputs/ is logged in plan section 13.
+"""Check that every 'exploratory' or 'post hoc' label in outputs/ is logged in plan section 13.
 
 Run as: python -I verification/check_deviations.py
 
 Each output file containing the word 'exploratory' (case-insensitive) needs a dated
-entry in section 13 that names the file and itself says 'exploratory'.
+entry in section 13 that names the file and itself says 'exploratory'; likewise each
+output file containing 'post hoc' (the analyses added after peer review, 20 November
+2026) needs a dated entry that names the file and says 'post hoc'.
 """
 import re
 import sys
@@ -13,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HEADING = "## 13. Deviations"
 DATE = re.compile(r"^\*\*\d{1,2} \w+ \d{4}\.?\*\*\.?$")
 ENTRY = re.compile(r"^\d+\.\s")
+LABELS = ("exploratory", "post hoc")
 
 
 def section13_entries(plan: str) -> list[tuple[str, str]]:
@@ -37,15 +40,16 @@ def problems(root: Path = ROOT) -> tuple[list[str], list[str]]:
         if not f.is_file():
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
-        n = len(re.findall("exploratory", text, re.I))
-        if not n:
-            continue
         rel = f.relative_to(root).as_posix()
-        if any("exploratory" in e.lower() and (f.name in e or rel in e) for _, e in entries):
-            ok.append(rel)
-        else:
-            bad.append(f"{rel}: {n} 'exploratory' label(s) with no dated section 13 entry "
-                       f"naming the file")
+        for label in LABELS:
+            n = len(re.findall(label, text, re.I))
+            if not n:
+                continue
+            if any(label in e.lower() and (f.name in e or rel in e) for _, e in entries):
+                ok.append(f"{rel} ({label})")
+            else:
+                bad.append(f"{rel}: {n} '{label}' label(s) with no dated section 13 entry "
+                           f"naming the file")
     return bad, ok
 
 
@@ -56,9 +60,9 @@ def main() -> int:
             print(f"FAIL: {b}")
         return 1
     if ok:
-        print(f"OK: exploratory labels logged in section 13 for {', '.join(ok)}")
+        print(f"OK: labels logged in section 13 for {', '.join(ok)}")
     else:
-        print("OK: no exploratory outputs")
+        print("OK: no exploratory or post hoc outputs")
     return 0
 
 

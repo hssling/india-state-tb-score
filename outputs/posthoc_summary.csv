@@ -1,0 +1,73 @@
+label,analysis,rule,indicator_set,se_variant,quantity,value,lo,hi,n,note
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_compared,35,,,35,
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_exceeds_registered,24,,,35,plan 10.3: |change| > 1.96 SE of the change
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,ivw_mean_change,3.850651880612654,,,35,
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,phi,30.269839630353182,,,35,mean squared 10%-winsorised z-score (Spiegelhalter 2005)
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,tau2,9.332732024643803,,,35,DerSimonian-Laird
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_outside95_mult,6,,,35,multiplicative overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_outside998_mult,5,,,35,multiplicative overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_outside95_add,2,,,35,additive overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",binomial,n_outside998_add,0,,,35,additive overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 multiplicity,R2,"1,2,3,4,6",binomial,z_bonferroni,3.1888152586384755,,,35,normal quantile at 1 - 0.05/(2 x 35)
+post hoc,Q4 multiplicity,R2,"1,2,3,4,6",binomial,n_exceeds_bonferroni,23,,,35,
+post hoc,Q4 multiplicity,R2,"1,2,3,4,6",binomial,n_exceeds_bh,24,,,35,"Benjamini-Hochberg, false discovery rate 0.05"
+post hoc,Q4 multiplicity,R2,"1,2,3,4,6",binomial,expected_false_positives,1.75,,,35,"0.05 x 35, unadjusted test, if no state changed"
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_compared,35,,,35,
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_exceeds_registered,24,,,35,plan 10.3: |change| > 1.96 SE of the change
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,ivw_mean_change,3.849385772462166,,,35,
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,phi,29.675102052291987,,,35,mean squared 10%-winsorised z-score (Spiegelhalter 2005)
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,tau2,9.320944646572109,,,35,DerSimonian-Laird
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_outside95_mult,6,,,35,multiplicative overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_outside998_mult,5,,,35,multiplicative overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_outside95_add,1,,,35,additive overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_outside998_add,0,,,35,additive overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_states_wilson,3,,,,Andaman and Nicobar Islands; Ladakh; Lakshadweep
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_changed_registered,0,,,35,none
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_changed_outside95_mult,0,,,35,none
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_changed_outside998_mult,0,,,35,none
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_changed_outside95_add,1,,,35,Ladakh
+post hoc,Q4 noise,R2,"1,2,3,4,6",wilson,n_changed_outside998_add,0,,,35,none
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_compared,35,,,35,
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_exceeds_registered,24,,,35,plan 10.3: |change| > 1.96 SE of the change
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,ivw_mean_change,2.8689693820212105,,,35,
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,phi,15.216203331806472,,,35,mean squared 10%-winsorised z-score (Spiegelhalter 2005)
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,tau2,4.428153338827488,,,35,DerSimonian-Laird
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_outside95_mult,7,,,35,multiplicative overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_outside998_mult,4,,,35,multiplicative overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_outside95_add,1,,,35,additive overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",binomial,n_outside998_add,0,,,35,additive overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 multiplicity,R1,"1,2,3,4,6",binomial,z_bonferroni,3.1888152586384755,,,35,normal quantile at 1 - 0.05/(2 x 35)
+post hoc,Q4 multiplicity,R1,"1,2,3,4,6",binomial,n_exceeds_bonferroni,22,,,35,
+post hoc,Q4 multiplicity,R1,"1,2,3,4,6",binomial,n_exceeds_bh,24,,,35,"Benjamini-Hochberg, false discovery rate 0.05"
+post hoc,Q4 multiplicity,R1,"1,2,3,4,6",binomial,expected_false_positives,1.75,,,35,"0.05 x 35, unadjusted test, if no state changed"
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_compared,35,,,35,
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_exceeds_registered,24,,,35,plan 10.3: |change| > 1.96 SE of the change
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,ivw_mean_change,2.8688515141499513,,,35,
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,phi,15.197244963738406,,,35,mean squared 10%-winsorised z-score (Spiegelhalter 2005)
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,tau2,4.4277794825111565,,,35,DerSimonian-Laird
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_outside95_mult,7,,,35,multiplicative overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_outside998_mult,4,,,35,multiplicative overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_outside95_add,1,,,35,additive overdispersion; 95% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_outside998_add,0,,,35,additive overdispersion; 99.8% limits about the IVW mean change
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_states_wilson,3,,,,Andaman and Nicobar Islands; Ladakh; Lakshadweep
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_changed_registered,0,,,35,none
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_changed_outside95_mult,0,,,35,none
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_changed_outside998_mult,0,,,35,none
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_changed_outside95_add,0,,,35,none
+post hoc,Q4 noise,R1,"1,2,3,4,6",wilson,n_changed_outside998_add,0,,,35,none
+post hoc,Q4 regression to the mean,R2,"1,2,3,4,6",binomial,oldham_r,0.4090518911626505,0.017154882780064575,0.6788259269932265,36,"Pearson r of change with the two-year mean; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R2,"1,2,3,4,6",binomial,oldham_rho,0.3364221364221364,-0.007881079744852935,0.6254365230116685,36,"Spearman rho, sensitivity; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R2,"2,3,4,6 (indicator 1 excluded)",binomial,oldham_r,0.3620473587150958,-0.16675611363169132,0.6727497857384493,36,"Pearson r of change with the two-year mean; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R2,"2,3,4,6 (indicator 1 excluded)",binomial,oldham_rho,0.09961389961389962,-0.23731030420373678,0.41562726389245935,36,"Spearman rho, sensitivity; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R1,"1,2,3,4,6",binomial,oldham_r,0.2722976319112432,-0.09895369846960396,0.5861781923760543,36,"Pearson r of change with the two-year mean; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R1,"1,2,3,4,6",binomial,oldham_rho,0.28468468468468466,-0.08088396518034467,0.6073436435355879,36,"Spearman rho, sensitivity; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R1,"2,3,4,6 (indicator 1 excluded)",binomial,oldham_r,0.0641321812616893,-0.18270553500562475,0.2649168814163258,36,"Pearson r of change with the two-year mean; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q4 regression to the mean,R1,"2,3,4,6 (indicator 1 excluded)",binomial,oldham_rho,0.061003861003861,-0.2560081053175013,0.36381393808351353,36,"Spearman rho, sensitivity; 10000 bootstrap draws, seed 20261120; 0 undefined"
+post hoc,Q3 prevalence uncertainty,R2,,,rho_point,-0.23508771929824562,,,19,registered plan 9.1 estimate
+post hoc,Q3 prevalence uncertainty,R2,,,rho_bootstrap,-0.2096342551293488,-0.6577551958888004,0.31742918719211827,19,"median and 2.5th-97.5th percentiles; lognormal prevalence and units resampled; 10000 draws, seed 20261120; 0 undefined"
+post hoc,Q3 prevalence uncertainty,R2,,,rho_prevalence_only,-0.21052631578947367,-0.3860087719298245,-0.003508771929824562,19,"median and 2.5th-97.5th percentiles; lognormal prevalence; 10000 draws, seed 20261120; 0 undefined"
+post hoc,Q3 prevalence uncertainty,R2,,,rho_half_width_at_0,0.4656377431929138,,,19,tanh(1.96 sqrt(1.06/(n - 3)))
+post hoc,Q3 prevalence uncertainty,R1,,,rho_point,-0.3,,,19,registered plan 9.1 estimate
+post hoc,Q3 prevalence uncertainty,R1,,,rho_bootstrap,-0.2774819524732087,-0.6725744346116028,0.25334394341290895,19,"median and 2.5th-97.5th percentiles; lognormal prevalence and units resampled; 10000 draws, seed 20261120; 0 undefined"
+post hoc,Q3 prevalence uncertainty,R1,,,rho_prevalence_only,-0.2771929824561403,-0.45964912280701753,-0.05964912280701755,19,"median and 2.5th-97.5th percentiles; lognormal prevalence; 10000 draws, seed 20261120; 0 undefined"
+post hoc,Q3 prevalence uncertainty,R1,,,rho_half_width_at_0,0.4656377431929138,,,19,tanh(1.96 sqrt(1.06/(n - 3)))

@@ -2,7 +2,9 @@
 
 Run as: python -I verification/check_all.py   (steps run from the repo root)
 
-Steps run as `python -I ...` subprocesses. After the analyses, `git status --porcelain`
+Steps run as `python -I ...` subprocesses. The post hoc analyses (src/posthoc.py, plan
+section 13, 20 November 2026) run with the analyses, and check_posthoc_outputs recomputes
+their point values independently. After the analyses, `git status --porcelain`
 on the generated outputs and extracted data must be empty, i.e. every committed output
 is reproduced byte for byte. In a copy without .git (a release archive), that step and
 check_plan_order print "SKIPPED: not a git checkout ..." and are counted as skipped: clone
@@ -27,11 +29,13 @@ STEPS = [
     ("q3_validity 2023", PY + ["src/q3_validity.py", "2023"]),
     ("q4_change", PY + ["src/q4_change.py"]),
     ("explore_udst (exploratory)", PY + ["src/explore_udst.py"]),
+    ("posthoc (post hoc, after peer review)", PY + ["src/posthoc.py"]),
 ]
 CHECKS = [
     ("check_extraction_totals", PY + ["verification/check_extraction_totals.py"]),
     ("check_plan_order", PY + ["verification/check_plan_order.py"]),
     ("check_deviations", PY + ["verification/check_deviations.py"]),
+    ("check_posthoc_outputs", PY + ["verification/check_posthoc_outputs.py"]),
     ("check_manuscript_numbers", PY + ["verification/check_manuscript_numbers.py"]),
     ("check_docx_tie", PY + ["verification/check_docx_tie.py"]),
 ]

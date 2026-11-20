@@ -249,13 +249,20 @@ def plan_facts(root: Path) -> dict:
 
     reg = grab(r"pushed to the public repository \S+ at (\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d:\d\d)Z")
     y, mo, d, t = reg.groups()
+    # section 13 by dated block: the entries made during the analysis (the first date) and
+    # those added after peer review of the manuscript (20 November 2026, post hoc)
     deviations = text.split("## 13. Deviations", 1)[1]
-    n_dev = len(re.findall(r"^\d+\. \*\*", deviations, re.M))
+    blocks = re.split(r"(?m)^\*\*(\d{1,2} \w+ \d{4})\.\*\*$", deviations)
+    by_date = {blocks[i]: len(re.findall(r"^\d+\. \*\*", blocks[i + 1], re.M))
+               for i in range(1, len(blocks) - 1, 2)}
+    first = next(iter(by_date))
     return {
         "alpha": grab(r"alpha_i = (\d+) for every i").group(1),
         "sat_share": int(grab(r"at least (\d+)% of the states for which it is computable").group(1)),
         "registration": f"{int(d)} {MONTHS[int(mo) - 1]} {y} at {t} UTC",
-        "n_deviations": n_dev,
+        "n_deviations": by_date[first],  # the entries of the analysis (17 November 2026)
+        "n_posthoc_entries": by_date.get("20 November 2026", 0),
+        "n_entries_all": sum(by_date.values()),
     }
 
 
@@ -285,6 +292,71 @@ def explore_udst(root: Path) -> dict[str, dict]:
     if any(r["label"] != "exploratory" for r in rows):
         raise ValueError("exploratory_udst_scaling_2023.csv: a row is not labelled exploratory")
     return {r["rule"]: r for r in rows if r["row_type"] == "rule_summary"}
+
+
+def posthoc_labels(root: Path) -> dict[str, str]:
+    """Catalogue strings of the post hoc analyses (plan section 13, 20 November 2026), read
+    from outputs/posthoc_summary.csv; {} if the file is absent."""
+    path = root / "outputs" / "posthoc_summary.csv"
+    if not path.exists():
+        return {}
+    rows = read_csv(path)
+    if any(r["label"] != "post hoc" for r in rows):
+        raise ValueError("posthoc_summary.csv: a row is not labelled post hoc")
+
+    def get(analysis, rule, variant, quantity, iset="1,2,3,4,6"):
+        hit = [r for r in rows if (r["analysis"], r["rule"], r["se_variant"], r["quantity"])
+               == (analysis, rule, variant, quantity) and r["indicator_set"] in (iset, "")]
+        if len(hit) != 1:
+            raise KeyError((analysis, rule, variant, quantity, iset))
+        return hit[0]
+
+    w: dict[str, str] = {}
+    for rule in ("R2", "R1"):
+        k = int(float(get("Q4 noise", rule, "binomial", "n_compared")["value"]))
+        for variant, tag in (("binomial", ""), ("wilson", ".wilson")):
+            for q in ("n_outside95_mult", "n_outside998_mult", "n_outside95_add",
+                      "n_outside998_add"):
+                n = int(float(get("Q4 noise", rule, variant, q)["value"]))
+                lev = "95%" if "95_" in q else "99.8%"
+                # in context: a bare "6 of 35" would mask a changed count elsewhere
+                w[f"posthoc.{rule}{tag}.{q[2:]}"] = f"{k_of_n(n, k)} outside the {lev} limits"
+                if q == "n_outside95_mult":
+                    w[f"posthoc.{rule}{tag}.mult95_states"] = f"{k_of_n(n, k)} states"
+            w[f"posthoc.{rule}{tag}.phi"] = num(float(get("Q4 noise", rule, variant, "phi")["value"]), 1)
+            w[f"posthoc.{rule}{tag}.tau2"] = num(float(get("Q4 noise", rule, variant, "tau2")["value"]), 2)
+        for q in ("n_exceeds_bonferroni", "n_exceeds_bh"):
+            n = int(float(get("Q4 multiplicity", rule, "binomial", q)["value"]))
+            w[f"posthoc.{rule}.{q.split('_')[-1]}"] = f"{k_of_n(n, k)} under {rule}"
+        w["posthoc.z_bonferroni"] = num(float(get("Q4 multiplicity", rule, "binomial",
+                                                  "z_bonferroni")["value"]), 2)
+        w["posthoc.expected_fp"] = num(float(get("Q4 multiplicity", rule, "binomial",
+                                                 "expected_false_positives")["value"]), 2)
+        w["posthoc.n_tests"] = f"0.05/{count(k)}"
+        for q in ("registered", "outside95_mult", "outside998_mult", "outside95_add",
+                  "outside998_add"):
+            r = get("Q4 noise", rule, "wilson", f"n_changed_{q}")
+            n = int(float(r["value"]))
+            w[f"posthoc.{rule}.wilson_changed.{q}"] = (
+                "no state" if n == 0 else f"{WORDS[n]} state{'' if n == 1 else 's'}")
+            if r["note"] != "none":
+                w[f"posthoc.{rule}.wilson_changed.{q}.names"] = listing(r["note"].split("; "))
+        r = get("Q4 noise", rule, "wilson", "n_states_wilson")
+        w[f"posthoc.{rule}.wilson_states"] = listing(r["note"].split("; "))
+        for iset, tag in (("1,2,3,4,6", "all"), ("2,3,4,6 (indicator 1 excluded)", "no1")):
+            for q in ("oldham_r", "oldham_rho"):
+                r = get("Q4 regression to the mean", rule, "binomial", q, iset)
+                w[f"posthoc.{rule}.{tag}.{q}"] = rho_ci(float(r["value"]), float(r["lo"]),
+                                                       float(r["hi"]))
+                w[f"posthoc.{rule}.{tag}.{q}.n"] = n_eq(int(r["n"]))
+        for q in ("rho_bootstrap", "rho_prevalence_only"):
+            r = get("Q3 prevalence uncertainty", rule, "", q)
+            w[f"posthoc.{rule}.q3.{q}"] = (f"{rho(float(r['value']))} "
+                                           f"({rng(rho(float(r['lo'])), rho(float(r['hi'])))})")
+        r = get("Q3 prevalence uncertainty", rule, "", "rho_half_width_at_0")
+        w["posthoc.q3.half_width"] = f"±{num(float(r['value']), 2)}"
+        w["posthoc.q3.min_detectable"] = f"|ρ| ≈ {num(float(r['value']), 2)}"
+    return w
 
 
 def survey_not_covered(root: Path) -> dict[str, list[str]]:
@@ -487,6 +559,9 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
         raise ValueError("exploratory R3 differs from the confirmatory R3")
     w["explore.R3.unchanged"] = "R3 unchanged"
 
+    # ---- post hoc (plan section 13, 20 November 2026): outputs/posthoc_summary.csv
+    w.update(posthoc_labels(root))
+
     # ---- plan 9.3: deaths and loss to follow-up, descriptive context only
     ctx = read_csv(root / "data" / "extracted" / "itr2024_outcomes_context.csv")
     nat = next(r for r in ctx if r["state"] == "INDIA")
@@ -529,6 +604,7 @@ def catalogue(root: Path = ROOT, count_pct: str = COUNT_PCT) -> dict[str, str]:
     w["methods.sat_level"] = num(SAT_LEVEL, 2)
     w["methods.registration"] = pf["registration"]
     w["methods.n_deviations"] = f"{WORDS[pf['n_deviations']]} dated entries"
+    w["methods.n_posthoc_entries"] = f"{WORDS[pf['n_posthoc_entries']]} after peer review"
     env = environment(root)
     w["methods.python"] = f"Python {env['Python']}"
     w["methods.pdfplumber"] = f"pdfplumber {env['pdfplumber']}"

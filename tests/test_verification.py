@@ -90,7 +90,7 @@ def test_deviations_flags_unlogged_label_any_case(tmp_path):
 
 def test_deviations_accepts_logged_label(tmp_path):
     _plan_and_outputs(tmp_path, PLAN13, {"q9.csv": "a,b\n1,exploratory\n"})
-    assert check_deviations.problems(tmp_path) == ([], ["outputs/q9.csv"])
+    assert check_deviations.problems(tmp_path) == ([], ["outputs/q9.csv (exploratory)"])
 
 
 def test_deviations_entry_must_name_the_file(tmp_path):
