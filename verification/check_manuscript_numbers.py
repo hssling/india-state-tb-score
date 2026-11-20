@@ -323,6 +323,7 @@ def posthoc_labels(root: Path) -> dict[str, str]:
                 w[f"posthoc.{rule}{tag}.{q[2:]}"] = f"{k_of_n(n, k)} outside the {lev} limits"
                 if q == "n_outside95_mult":
                     w[f"posthoc.{rule}{tag}.mult95_states"] = f"{k_of_n(n, k)} states"
+                    w[f"posthoc.{rule}{tag}.outside95_mult.n"] = f"{k_of_n(n, k)} changes were"
             w[f"posthoc.{rule}{tag}.phi"] = num(float(get("Q4 noise", rule, variant, "phi")["value"]), 1)
             w[f"posthoc.{rule}{tag}.tau2"] = num(float(get("Q4 noise", rule, variant, "tau2")["value"]), 2)
         for q in ("n_exceeds_bonferroni", "n_exceeds_bh"):
@@ -356,6 +357,12 @@ def posthoc_labels(root: Path) -> dict[str, str]:
         r = get("Q3 prevalence uncertainty", rule, "", "rho_half_width_at_0")
         w["posthoc.q3.half_width"] = f"±{num(float(r['value']), 2)}"
         w["posthoc.q3.min_detectable"] = f"|ρ| ≈ {num(float(r['value']), 2)}"
+    # direction of the unusual changes (R2, multiplicative 95% limits): rises above the mean
+    st = [r for r in read_csv(root / "outputs" / "posthoc_q4_states.csv")
+          if r["rule"] == "R2" and r["se_variant"] == "binomial" and r["outside95_mult"] == "1"]
+    up = sum(float(r["z_funnel"]) > 0 for r in st)
+    w["posthoc.R2.mult95_up"] = f"{count(up)} upwards"
+    w["posthoc.R2.mult95_up_text"] = f"{count(up)} of them unusually large rises"
     from src.posthoc import ALPHA, WINSOR, Z95, Z998
     w["posthoc.winsor"] = f"{pct(WINSOR, 1, 0)}-winsorised"
     lev = [num(100 * math.erf(z / math.sqrt(2)), 0 if z == Z95 else 1) + "%" for z in (Z95, Z998)]
@@ -960,16 +967,18 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "{q3.R2.primary.n} units",
         "Between 2022 and 2023, {q4.R2.all.exceeds} states changed by more than noise on a "
         "rebuilt partial score",
-        "allowing for overdispersion (post hoc), {posthoc.R2.mult95_states} changed unusually",
+        "allowing for overdispersion (post hoc), {posthoc.R2.mult95_states} "
+        "({posthoc.R2.mult95_up}) changed unusually",
         "To our knowledge",
     ],
     "Methods": [ph for ph in SECTION_REQUIRED["Methods"]] + [
-        "and {methods.n_posthoc_entries}, after an internal critical review of the draft, which "
-        "adds post hoc analyses",
+        "It also logs {methods.n_posthoc_entries}, after an internal critical review of the draft, "
+        "which adds post hoc analyses",
         "deviations and notes are distinguished in Supplementary Table S1",
         "Oldham's method,^23^",
         "(R1, capped)", "(R2, uncapped)",
-        "a {methods.cv_range}", "centred on equal weights",
+        "a {methods.cv_range} over the available indicators (plan §8.1)",
+        "centred on equal weights",
         "on indicators 1, 2, 3, 4 and 6 ({q4.common_points})",
         "its half-width is {posthoc.q3.half_width}",
         "(φ, from {posthoc.winsor} z-scores)", "states outside the {posthoc.limits}",
@@ -983,15 +992,17 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "Of the {q1.n_published}, Karnataka",
         "its indicator 5 denominator is blank",
         "No rule was admissible (Supplementary Table S3): the residual lay in the band for "
-        "{q1.R1.in_band} states under R1 and {q1.R3.in_band} under R3",
+        "{q1.R1.in_band} states under R1 (capped) and {q1.R3.in_band} under R3 (relative to the "
+        "best state)",
         "the residual lay in the band for {q1.R2.in_band} states (Figure 1)",
         "(R2, median {q1.R2.residual_median_iqr}; R1, median {q1.R1.residual_median_iqr}; "
         "Supplementary Table S4)",
         "every state outside the band lay above it",
         "(R4 could not be tested)",
         "R2 was carried into Q2–Q4",
-        "its lowest residual is {q1.R2.min_residual_state}'s, inflated by an indicator 4 "
-        "{q4.ind4_error.a}",
+        "its lowest residual, {q1.R2.min_residual_state}'s, is lowered by a partial score "
+        "inflated by an indicator 4 {q4.ind4_error.a}",
+        "R1 (capped)", "R2 (uncapped)", "R3 (relative to the best state)",
         "({q4.max_2023} in Q4)",
         "In the exploratory analysis, with indicator 3 scaled to CTD's national figure, "
         "{explore.R2.in_band} states lay in the band under R2 (R1, {explore.R1.in_band}; "
@@ -1033,7 +1044,8 @@ JPH_SECTION_REQUIRED: dict[str, list[str]] = {
         "(ρ with the published ranking {q2.R2.1_weights.c63.spearman_range})",
         "brought {explore.R2.in_band} states into the band under R2 and {explore.R1.in_band} "
         "under R1 (exploratory)",
-        "allowing for overdispersion left {posthoc.R2.mult95_states}",
+        "allowing for overdispersion (post hoc), {posthoc.R2.outside95_mult.n} unusual relative "
+        "to other states, only {posthoc.R2.mult95_up_text}",
         "uninformative below {posthoc.q3.min_detectable}",
         "Andhra Pradesh rose by {q4.example.Andhra Pradesh}, beyond noise; Puducherry rose by "
         "{q4.example.Puducherry}, within it",
@@ -1060,7 +1072,8 @@ JPH_REQUIRED = [lab for lab in REQUIRED
     "posthoc.z_bonferroni", "posthoc.expected_fp", "posthoc.n_tests",
     "posthoc.R2.phi", "posthoc.R2.tau2", "posthoc.R2.outside95_mult",
     "posthoc.R2.outside998_mult", "posthoc.R2.outside95_add", "posthoc.R2.outside998_add",
-    "posthoc.R2.mult95_states", "posthoc.R2.all.oldham_r", "posthoc.R1.all.oldham_r",
+    "posthoc.R2.mult95_states", "posthoc.R2.mult95_up", "posthoc.R2.mult95_up_text",
+    "posthoc.R2.all.oldham_r", "posthoc.R1.all.oldham_r",
     "posthoc.R2.q3.rho_bootstrap", "posthoc.R1.q3.rho_bootstrap", "posthoc.q3.half_width",
     "posthoc.q3.min_detectable", "posthoc.winsor", "posthoc.limits", "posthoc.fdr",
     "q1.R1.residual_median_iqr", "q1.R2.residual_median_iqr", "q1.mismatch_points",
