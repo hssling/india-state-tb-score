@@ -19,9 +19,9 @@ authors:
       and Research Hospital, Tumkur, Karnataka, India
 license: MIT
 repository-code: "https://github.com/hssling/india-state-tb-score"
-version: "v1.0.0"
-date-released: "2026-11-18"
-doi: "10.5281/zenodo.24323627"
+version: "v1.1.0"
+date-released: "2026-11-20"
+doi: "10.5281/zenodo.24323626"
 keywords:
   - tuberculosis
   - India
