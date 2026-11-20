@@ -189,3 +189,19 @@ Known limits, unchanged in kind:
 
 The real `manuscript.md` is not changed by the harness (MD5 128acafdad85d75fd41654c872cda18a
 before and after).
+
+## Journal profiles (20 November 2026)
+
+The checks now take a journal profile (`check_manuscript_numbers.PROFILES`): IJMR for
+`manuscript/` (the default, unchanged) and JPH (Journal of Public Health) for the private
+`manuscript/jph_v2/` set, which has Arabic table numerals, Supplementary Tables S1-S7 and
+Supplementary Figure S1, '###' Discussion sub-headings and a checked Supplementary figure
+section. `--manuscript-dir manuscript/jph_v2` runs the harness on that set. Run on
+20 November 2026:
+
+| Set | inc | swap | All |
+|---|---|---|---|
+| IJMR (`manuscript/`) | 326 of 326 | 326 of 326 | 652 of 652 |
+| JPH (`manuscript/jph_v2/`) | 332 of 332 | 332 of 332 | 664 of 664 |
+
+Fixture tests of the profiles: `tests/test_profiles.py`.
